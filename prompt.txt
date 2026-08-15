@@ -1,0 +1,5 @@
+Read AGENTIC_TESTCRAFT_BUILD.md completely before making changes.
+
+Then execute the plan end-to-end with maximum care and quality.
+Work autonomously, follow every quality gate, use Git commits as instructed,
+and do not skip ahead to building the final skill.
