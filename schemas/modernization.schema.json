@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-testcraft.dev/schemas/modernization.schema.json",
+  "title": "Modernization Record",
+  "description": "A documented update to source-derived guidance based on current primary/official sources.",
+  "type": "object",
+  "required": ["id", "topic", "book_position", "modern_position", "status", "rationale", "official_sources", "affected_knowledge_ids", "review_date"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^modern:[a-z0-9-]+$" },
+    "topic": { "type": "string" },
+    "book_position": { "type": "string" },
+    "modern_position": { "type": "string" },
+    "status": { "type": "string", "enum": ["unchanged","clarified","expanded","narrowed","superseded","historical"] },
+    "rationale": { "type": "string" },
+    "official_sources": { "type": "array", "items": { "type": "string", "format": "uri" } },
+    "affected_knowledge_ids": { "type": "array", "items": { "type": "string" } },
+    "agent_rule_change": { "type": ["string", "null"] },
+    "review_date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "modern_origin": { "type": "string", "default": "modern_official" }
+  }
+}

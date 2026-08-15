@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-testcraft.dev/schemas/principle.schema.json",
+  "title": "Principle Record",
+  "description": "A source-derived testing principle with default rule and explicit exceptions/tradeoffs.",
+  "type": "object",
+  "required": ["id", "name", "statement", "source_refs"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^principle:[a-z0-9-]+$" },
+    "name": { "type": "string" },
+    "aliases": { "type": "array", "items": { "type": "string" } },
+    "statement": { "type": "string" },
+    "rationale": { "type": "string" },
+    "default_rule": { "type": "string" },
+    "exceptions": { "type": "array", "items": { "type": "string" } },
+    "tradeoffs": { "type": "array", "items": { "type": "string" } },
+    "failure_modes_if_ignored": { "type": "array", "items": { "type": "string" } },
+    "related_patterns": { "type": "array", "items": { "type": "string" } },
+    "related_smells": { "type": "array", "items": { "type": "string" } },
+    "agent_checks": { "type": "array", "items": { "type": "string" } },
+    "source_refs": { "$ref": "source-ref.schema.json#/definitions/ref-list" },
+    "confidence": { "type": "string", "enum": ["default","preference","warning","exception","context_dependent","historical","certain"] },
+    "origin": { "type": "string", "enum": ["book","modern_official","modern_research","inference","project_convention"] }
+  },
+  "definitions": {
+    "ref-list": { "type": "array", "items": { "$ref": "source-ref.schema.json" }, "minItems": 1 }
+  }
+}

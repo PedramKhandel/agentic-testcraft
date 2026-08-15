@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-testcraft.dev/schemas/source-ref.schema.json",
+  "title": "Source Reference",
+  "description": "Provenance pointer to an immutable source range. Mandatory for all book-derived records.",
+  "type": "object",
+  "required": ["source_id", "file_sha256"],
+  "additionalProperties": false,
+  "properties": {
+    "source_id": { "type": "string", "description": "Identifier of the source dataset (e.g. 'book')." },
+    "file_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$", "description": "SHA-256 of the source file." },
+    "markdown_start_line": { "type": ["integer", "null"], "minimum": 1 },
+    "markdown_end_line": { "type": ["integer", "null"], "minimum": 1 },
+    "pdf_page_start": { "type": ["integer", "null"], "minimum": 1 },
+    "pdf_page_end": { "type": ["integer", "null"], "minimum": 1 }
+  }
+}

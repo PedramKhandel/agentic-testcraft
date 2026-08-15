@@ -1,0 +1,80 @@
+[project]
+name = "agentic-testcraft"
+version = "0.1.0"
+description = "Design, write, review, refactor, and validate maintainable automated tests using behavior-focused test design, principled fixtures and test doubles, test-smell detection, and modern testability practices."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+  { name = "Agentic Testcraft Contributors" },
+]
+keywords = ["testing", "agent-skill", "tdd", "test-doubles", "test-smells"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Development Status :: 3 - Alpha",
+  "Topic :: Software Development :: Testing",
+  "Intended Audience :: Developers",
+]
+dependencies = [
+  "pydantic>=2.10,<3",
+  "typer>=0.15,<1",
+  "rich>=13.9,<14",
+  "PyYAML>=6.0,<7",
+  "networkx>=3.4,<4",
+  "markdown-it-py>=3.0,<4",
+  "pymupdf>=1.25,<2",
+  "httpx>=0.27,<1",
+  "tenacity>=9.0,<10",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-randomly>=3.6,<4",
+  "jsonschema>=4.23,<5",
+  "ruff>=0.11,<1",
+  "mypy>=1.13,<2",
+  "typer>=0.15,<1",
+  "rich>=13.9,<14",
+]
+eval = [
+  "pytest>=8.3,<9",
+  "jsonschema>=4.23,<5",
+]
+
+[project.scripts]
+agentic-testcraft = "agentic_testcraft.cli:app"
+
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.uv]
+package = true
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "C4", "PT"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_configs = true
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra -q --strict-markers"

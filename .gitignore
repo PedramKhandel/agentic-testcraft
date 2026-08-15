@@ -1,0 +1,30 @@
+# Copyrighted source materials (not redistributed by this repository)
+# The PDF and converted Markdown of "xUnit Test Patterns" are processed
+# locally but intentionally excluded from version control.
+/xUnit Test Patterns_ Refactoring Test Code - by Gerard Meszaros - 2007.pdf
+/xUnit Test Patterns_ Refactoring Test Code - by Gerard Meszaros - 2007.md
+
+# Local working artifacts (processing, renders, extraction cache)
+.local/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+.venv.bak/
+venv/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Tooling generated outputs that are rebuilt deterministically
+knowledge/book/*.jsonl
+knowledge/book/*__extract.json
+knowledge/graph/*.jsonl
+knowledge/graph/graph.json
+evals/results/

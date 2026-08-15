@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-testcraft.dev/schemas/goal.schema.json",
+  "title": "Goal Record",
+  "description": "A high-level testing goal the skill should pursue.",
+  "type": "object",
+  "required": ["id", "name", "summary", "why_it_matters", "source_refs"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^goal:[a-z0-9-]+$" },
+    "name": { "type": "string" },
+    "summary": { "type": "string" },
+    "why_it_matters": { "type": "string" },
+    "indicators": { "type": "array", "items": { "type": "string" } },
+    "tensions": { "type": "array", "items": { "type": "string" } },
+    "related_principles": { "type": "array", "items": { "type": "string" } },
+    "source_refs": { "$ref": "source-ref.schema.json#/definitions/ref-list" },
+    "confidence": { "type": "string", "enum": ["default","preference","warning","exception","context_dependent","historical","certain"] },
+    "origin": { "type": "string", "enum": ["book","modern_official","modern_research","inference","project_convention"] }
+  },
+  "definitions": {
+    "ref-list": { "type": "array", "items": { "$ref": "source-ref.schema.json" }, "minItems": 1 }
+  }
+}

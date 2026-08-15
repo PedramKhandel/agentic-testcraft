@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-testcraft.dev/schemas/source-manifest.schema.json",
+  "title": "Source Manifest",
+  "description": "Record of discovered immutable source files (filenames, sizes, hashes, discovery timestamp).",
+  "type": "object",
+  "required": ["discovered_at", "files"],
+  "additionalProperties": false,
+  "properties": {
+    "discovered_at": { "type": "string", "format": "date-time" },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["filename", "size_bytes", "sha256", "path_style"],
+        "additionalProperties": false,
+        "properties": {
+          "filename": { "type": "string" },
+          "size_bytes": { "type": "integer", "minimum": 0 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "path_style": { "type": "string", "enum": ["repo_root","local_work"] },
+          "sha256_lines": { "type": ["string", "null"] }
+        }
+      },
+      "minItems": 1
+    }
+  }
+}

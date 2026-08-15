@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-testcraft.dev/schemas/pattern.schema.json",
+  "title": "Pattern Record",
+  "description": "A test pattern / strategy with problem, forces, solution, tradeoffs, and agent decision rule.",
+  "type": "object",
+  "required": ["id", "name", "problem", "solution", "source_refs"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^pattern:[a-z0-9-]+$" },
+    "name": { "type": "string" },
+    "aliases": { "type": "array", "items": { "type": "string" } },
+    "category": { "type": "string" },
+    "problem": { "type": "string" },
+    "intent": { "type": ["string", "null"] },
+    "context": { "type": ["string", "null"] },
+    "forces": { "type": "array", "items": { "type": "string" } },
+    "solution": { "type": "string" },
+    "use_when": { "type": ["string", "null"] },
+    "avoid_when": { "type": ["string", "null"] },
+    "benefits": { "type": "array", "items": { "type": "string" } },
+    "costs": { "type": "array", "items": { "type": "string" } },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "implementation_variations": { "type": "array", "items": { "type": "string" } },
+    "related_patterns": { "type": "array", "items": { "type": "string" } },
+    "prevents_smells": { "type": "array", "items": { "type": "string" } },
+    "may_cause_smells": { "type": "array", "items": { "type": "string" } },
+    "refactorings": { "type": "array", "items": { "type": "string" } },
+    "agent_decision_rule": { "type": ["string", "null"] },
+    "agent_actions": { "type": "array", "items": { "type": "string" } },
+    "common_misinterpretations": { "type": "array", "items": { "type": "string" } },
+    "historical_or_framework_specific_notes": { "type": ["string", "null"] },
+    "source_refs": { "$ref": "source-ref.schema.json#/definitions/ref-list" },
+    "confidence": { "type": "string", "enum": ["default","preference","warning","exception","context_dependent","historical","certain"] },
+    "origin": { "type": "string", "enum": ["book","modern_official","modern_research","inference","project_convention"] }
+  },
+  "definitions": {
+    "ref-list": { "type": "array", "items": { "$ref": "source-ref.schema.json" }, "minItems": 1 }
+  }
+}

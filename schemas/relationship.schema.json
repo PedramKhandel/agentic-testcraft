@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-testcraft.dev/schemas/relationship.schema.json",
+  "title": "Relationship",
+  "description": "A directed, labeled edge between two knowledge nodes.",
+  "type": "object",
+  "required": ["from_id", "relationship", "to_id", "origin", "confidence"],
+  "additionalProperties": false,
+  "properties": {
+    "from_id": { "type": "string" },
+    "relationship": {
+      "type": "string",
+      "enum": ["supports","implements","alternative_to","variation_of","specialization_of","used_with","prevents","may_cause","caused_by","refactors_to","requires","conflicts_with","preferred_over_when"]
+    },
+    "to_id": { "type": "string" },
+    "strength": { "type": ["string", "null"] },
+    "rationale": { "type": ["string", "null"] },
+    "source_refs": { "type": ["array", "null"], "items": { "$ref": "source-ref.schema.json" } },
+    "origin": { "type": "string", "enum": ["book","modern_official","modern_research","inference","project_convention"] },
+    "confidence": { "type": "string", "enum": ["default","preference","warning","exception","context_dependent","historical","certain"] },
+    "explicit": { "type": "boolean", "description": "True when the relationship is asserted by the source, false when inferred." }
+  }
+}
