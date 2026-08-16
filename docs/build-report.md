@@ -304,3 +304,76 @@ remapping from `code:`→`smell:`, self/excluded/ambiguous dropping).
 
 **Commit:** M6 relationship graph on `main`.
 
+> **M6 graph note:** `build_graph` uses `nx.MultiDiGraph` so parallel edges
+> (the same node-pair related by distinct relationship types, e.g.
+> `pattern → smell` and `pattern → principle`) are preserved. The first pass
+> used a plain `DiGraph`, which collapsed parallel edges: `relationships.jsonl`
+> had 660 distinct relationships while `graph.json` reported only 648 edges.
+
+---
+
+## M7 — Synthesis into operational decision rules
+
+**How:** `synthesize.py` derives compact, operational `DecisionRuleRecord`s
+deterministically from the structured knowledge (M5) + relationship graph (M6)
+— **no LLM** is available in this environment, so synthesis is structural
+rather than the plan's preferred large-context reasoning pass. Every rule's
+`evidence_ids` point to the exact book records (and graph edges) it is grounded
+in.
+
+For each knowledge entity exactly one rule is derived:
+
+- **pattern → `rule:<slug>`** (`strength=certain`): *trigger* = the problem;
+  *default_action* = "Apply the X pattern…"; *evidence* = the pattern + the
+  smells it addresses (`graph smell → pattern refactors_to`) + smells it
+  prevents/may-causes (`graph pattern → smell`). *warnings* from `risks`.
+ - **smell → `rule:smell-<slug>`** (`strength=warning`): *trigger* = the smell
+  summary; *default_action* = "do not introduce / refactor toward the patterns
+  that address it"; *evidence* = the smell + solution patterns from the graph.
+- **principle → `rule:<slug>`** (`strength=certain`): *trigger* = the
+  statement; *default_action* = the principle's `default_rule`; *evidence* =
+  the principle + entities it supports + goals/principles that reference it.
+- **goal → `rule:<slug>`** (`strength=default`): *trigger* = the summary;
+  *default_action* = verify the goal is satisfied; *evidence* = the goal + what
+  it supports; *warnings* = tensions, *agent_verification* = indicators.
+
+Two higher-order rules are synthesized from the corpus as a whole:
+
+- `rule:one-condition-per-test` — the semantic rule: *"Verify one condition per
+  test" ≠ "one assertion per test"* (evidence = all principles).
+- `rule:test-execution-workflow` — the 14-step execution strategy (evidence =
+  all goals + principles).
+
+A markdown companion (`knowledge/synthesized/testing-workflow.md`) records the
+workflow + the semantic rule for human reading.
+
+**Outputs (`knowledge/synthesized/`):** `decision-rules.jsonl` (93 rules) +
+`testing-workflow.md`.
+
+**Verification:**
+```
+agentic-testcraft synthesize
+    synthesized 93 decision rules -> knowledge/synthesized/decision-rules.jsonl
+agentic-testcraft validate-knowledge
+    knowledge/synthesized/decision-rules.jsonl: 93/93 records valid
+    all knowledge artifacts valid
+```
+(93 = 50 patterns + 15 smells + 13 principles + 13 goals + 2 workflow rules.)
+
+**Quality gates:** ruff clean, mypy clean (`synthesize`, `schemas`),
+**18 tests pass** (`tests/unit/test_synthesize.py` + `test_graph.py`);
+full suite **77 tests pass**.
+
+**Notes / limitations:**
+- `validate-knowledge` was extended to also scan `knowledge/synthesized/`
+  (dispatch by `rule:` id prefix) — fixes an earlier mismatch where the map
+  keyed on `decision-rule:` but the schema + rule ids use `rule:`.
+- Because no LLM is available, the per-topic markdown decision docs
+  (boundary / verification / fixture / test-double / smell-review /
+  testability-refactoring) are represented as the operational rule set + the
+  workflow doc rather than long-form narrative; they remain candidates for an
+  LLM-assisted expansion pass.
+
+**Commit:** M7 synthesis on `main`.
+
+

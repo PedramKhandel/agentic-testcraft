@@ -253,7 +253,7 @@ _KNOWLEDGE_MODELS: dict[str, type[BaseModel]] = {
     "goal:": GoalRecord,
     "principle:": PrincipleRecord,
     "relationship:": RelationshipRecord,
-    "decision-rule:": DecisionRuleRecord,
+    "rule:": DecisionRuleRecord,
     "modern:": ModernizationRecord,
 }
 
@@ -321,8 +321,14 @@ def run_validate_knowledge() -> None:
     else:
         console.print("[yellow]structure.json[/yellow]: missing (run `split` first)")
 
-    # 3) extracted knowledge (book records by id prefix; graph = relationships)
-    knowledge_dirs = [p.knowledge_book_dir, p.knowledge_graph_dir, p.knowledge_modern_dir]
+    # 3) extracted knowledge (book records by id prefix; graph = relationships;
+    #    synthesized = decision rules)
+    knowledge_dirs = [
+        p.knowledge_book_dir,
+        p.knowledge_graph_dir,
+        p.knowledge_modern_dir,
+        p.knowledge_synthesized_dir,
+    ]
     for kd in knowledge_dirs:
         for jf in sorted(kd.glob("*.jsonl")):
             recs = read_jsonl(jf)
