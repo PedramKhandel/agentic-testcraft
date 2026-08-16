@@ -10,9 +10,11 @@ book / modern split explicit (rule 4.2).
 
 from __future__ import annotations
 
-from typing import Literal
+import json
+from typing import Literal, get_args
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from rich.console import Console
 
 from .provenance import (
     VALID_ORIGINS,
@@ -20,6 +22,7 @@ from .provenance import (
     Provenance,
     SourceRef,
     ensure_book_provenance,
+    read_jsonl,
 )
 
 Confidence = Literal[
@@ -49,7 +52,7 @@ class IdentifiedRecord(BaseModel):
     source_refs: list[SourceRef] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def _check_provenance(self) -> "IdentifiedRecord":
+    def _check_provenance(self) -> IdentifiedRecord:
         if self.origin == "book":
             ensure_book_provenance(Provenance(origin=self.origin, source_refs=self.source_refs))
         return self
@@ -134,7 +137,7 @@ RelationshipType = Literal[
     "conflicts_with",
     "preferred_over_when",
 ]
-VALID_RELATIONSHIPS = RelationshipType.__args__
+VALID_RELATIONSHIPS = get_args(RelationshipType)
 
 
 class RelationshipRecord(BaseModel):
@@ -190,7 +193,154 @@ class ModernizationRecord(BaseModel):
     modern_origin: str = "modern_official"
 
 
+# --------------------------------------------------------------------------- #
+# Pipeline-stage artifacts (not book knowledge): chunk manifest + reports.    #
+# --------------------------------------------------------------------------- #
+
+ChunkKind = Literal[
+    "pattern",
+    "code",
+    "behavior",
+    "project",
+    "goal",
+    "principle",
+    "reference",
+    "narrative",
+]
+
+
+class ChunkRecord(BaseModel):
+    """One record from ``chunk-manifest.jsonl`` (Stage 3 output)."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
+
+    id: str
+    kind: ChunkKind
+    chapter_kind: str
+    chapter_title: str
+    title: str
+    category: str = ""
+    clean_start_line: int = Field(ge=1)
+    clean_end_line: int = Field(ge=1)
+    source_refs: list[SourceRef] = Field(default_factory=list, min_length=1)
+    subsections: list[str] = Field(default_factory=list)
+    aliases: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _bounds(self) -> ChunkRecord:
+        if self.clean_end_line < self.clean_start_line:
+            raise ValueError("clean_end_line must be >= clean_start_line")
+        return self
+
+
+class StructureReport(BaseModel):
+    """Schema for ``structure.json`` (Stage 3 validity summary)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    file_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    generated_at: str | None = None
+    chunk_count: int = Field(ge=0)
+    by_kind: dict[str, int]
+    by_chapter_kind: dict[str, int]
+    completeness_problems: list[str] = Field(default_factory=list)
+
+
+# Maps a knowledge record's ``id`` prefix to its enforcing pydantic model.
+_KNOWLEDGE_MODELS: dict[str, type[BaseModel]] = {
+    "pattern:": PatternRecord,
+    "smell:": SmellRecord,
+    "goal:": GoalRecord,
+    "principle:": PrincipleRecord,
+    "relationship:": RelationshipRecord,
+    "decision-rule:": DecisionRuleRecord,
+    "modern:": ModernizationRecord,
+}
+
+
+def _model_for_id(record_id: str) -> type[BaseModel] | None:
+    for prefix, model in _KNOWLEDGE_MODELS.items():
+        if record_id.startswith(prefix):
+            return model
+    return None
+
+
+def run_validate_knowledge() -> None:
+    """Stage 4 entry point: validate every knowledge artifact against its schema.
+
+    Validates:
+    * ``.local/work/chunk-manifest.jsonl`` -> :class:`ChunkRecord` (one per line)
+    * ``.local/work/structure.json``      -> :class:`StructureReport`
+    * ``knowledge/{book,graph,modern}/*.jsonl`` -> dispatched by ``id`` prefix
+      to the matching knowledge model (:class:`PatternRecord`, :class:`SmellRecord`,
+      :class:`GoalRecord`, :class:`PrincipleRecord`, :class:`RelationshipRecord`,
+      :class:`DecisionRuleRecord`, :class:`ModernizationRecord`).
+
+    Exits non-zero if any record fails validation.
+    """
+    from .config import load_settings
+
+    settings = load_settings()
+    p = settings.paths
+    console = Console()
+    errors: list[str] = []
+
+    # 1) chunk manifest
+    manifest = p.work_dir / "chunk-manifest.jsonl"
+    if manifest.exists():
+        recs = read_jsonl(manifest)
+        ok = 0
+        for i, r in enumerate(recs, 1):
+            try:
+                ChunkRecord(**r)
+                ok += 1
+            except Exception as exc:  # noqa: BLE001 - report, don't crash
+                errors.append(f"chunk-manifest.jsonl[{i}] (id={r.get('id')}): {exc}")
+        console.print(f"[bold]chunk-manifest.jsonl[/bold]: {ok}/{len(recs)} records valid")
+    else:
+        console.print("[yellow]chunk-manifest.jsonl[/yellow]: missing (run `split` first)")
+
+    # 2) structure report
+    srep = p.work_dir / "structure.json"
+    if srep.exists():
+        try:
+            StructureReport(**json.loads(srep.read_text(encoding="utf-8")))
+            console.print("[bold]structure.json[/bold]: valid")
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"structure.json: {exc}")
+    else:
+        console.print("[yellow]structure.json[/yellow]: missing (run `split` first)")
+
+    # 3) extracted knowledge
+    knowledge_dirs = [p.knowledge_book_dir, p.knowledge_graph_dir, p.knowledge_modern_dir]
+    for kd in knowledge_dirs:
+        for jf in sorted(kd.glob("*.jsonl")):
+            recs = read_jsonl(jf)
+            ok = 0
+            for i, r in enumerate(recs, 1):
+                model = _model_for_id(r.get("id", ""))
+                if model is None:
+                    errors.append(f"{jf.name}[{i}]: unknown id prefix {r.get('id', '')!r}")
+                    continue
+                try:
+                    model(**r)
+                    ok += 1
+                except Exception as exc:  # noqa: BLE001
+                    errors.append(f"{jf.name}[{i}] (id={r.get('id')}): {exc}")
+            console.print(f"[bold]{jf.relative_to(p.repo_root)}[/bold]: {ok}/{len(recs)} records valid")
+
+    if errors:
+        console.print(f"[red]{len(errors)} validation error(s):[/red]")
+        for e in errors:
+            console.print(f"  - {e}")
+        raise SystemExit(1)
+
+    console.print("[green]all knowledge artifacts valid[/green]")
+
+
 __all__ = [
+    "ChunkKind",
+    "ChunkRecord",
     "Confidence",
     "DecisionRuleRecord",
     "GoalRecord",
@@ -202,8 +352,11 @@ __all__ = [
     "RelationshipRecord",
     "RelationshipType",
     "SmellRecord",
+    "SourceRef",
     "Strength",
     "VALID_RELATIONSHIPS",
     "VALID_ORIGINS",
     "OriginLiteral",
+    "StructureReport",
+    "run_validate_knowledge",
 ]

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-testcraft.dev/schemas/chunk-record.schema.json",
+  "title": "Chunk Record",
+  "description": "One record from the Stage-3 chunk-manifest (chunk-manifest.jsonl). Carries clean-line span, source provenance, and recorded subsections.",
+  "type": "object",
+  "required": ["id", "kind", "chapter_kind", "chapter_title", "title", "clean_start_line", "clean_end_line", "source_refs"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "description": "Namespace-prefixed chunk id, e.g. pattern:assertion-method." },
+    "kind": { "type": "string", "enum": ["pattern", "code", "behavior", "project", "goal", "principle", "reference", "narrative"] },
+    "chapter_kind": { "type": "string" },
+    "chapter_title": { "type": "string" },
+    "title": { "type": "string" },
+    "category": { "type": "string" },
+    "clean_start_line": { "type": "integer", "minimum": 1 },
+    "clean_end_line": { "type": "integer", "minimum": 1 },
+    "source_refs": { "$ref": "source-ref.schema.json#/definitions/ref-list" },
+    "subsections": { "type": "array", "items": { "type": "string" } },
+    "aliases": { "type": "array", "items": { "type": "string" } }
+  }
+}

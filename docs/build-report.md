@@ -149,3 +149,44 @@ unmatched-catalog-entry reporting) — all green.
 **Quality gates:** ruff clean, mypy clean (1 source), **35 tests pass**.
 
 **Commits:** M3 chunking on `main`; `clean.py` italic-heading fix on `main`.
+
+---
+
+## M4 — Schema validators + `validate-knowledge` CLI
+
+**How:** Implemented the Stage-4 validator in `schemas.py` (the canonical
+pydantic-model layer that mirrors `schemas/*.schema.json`), plus two new JSON
+Schema artifacts and the CLI wiring already referenced by `cli.py`.
+
+- **`ChunkRecord`** + **`StructureReport`** pydantic models enforcing the M3
+  chunk-manifest record shape and the `structure.json` validity summary
+  (`extra="forbid"`, `id` prefix patterns, clean-line bounds, source-ref
+  presence/positivity, SHA-256 format).
+- New JSON Schemas: `schemas/chunk-record.schema.json`,
+  `schemas/structure-report.schema.json`.
+- **`run_validate_knowledge()`** validates:
+  1. `.local/work/chunk-manifest.jsonl` — one `ChunkRecord` per line;
+  2. `.local/work/structure.json` — `StructureReport`;
+  3. `knowledge/{book,graph,modern}/*.jsonl` — each record dispatched to its
+     enforcing model by `id` prefix (`pattern:`/`smell:`/`goal:`/
+     `principle:`/`relationship:`/`decision-rule:`/`modern:`).
+  Missing artifacts are warnings (not fatal); schema failures are collected and
+  the command exits non-zero on any error.
+- Knowledge-model dispatch uses `get_args(RelationshipType)` (mypy-clean).
+
+**Supporting tidy-up:** made `chunk.py` lint- and mypy-clean
+(`dict[str, Any]`, dropped unused `SourceRef` import, unquoted `from __future__`
+annotations).
+
+**Verification:**
+```
+agentic-testcraft validate-knowledge
+chunk-manifest.jsonl: 119/119 records valid
+structure.json: valid
+all knowledge artifacts valid
+```
+
+**Quality gates:** ruff clean, mypy clean (`schemas`, `structure`, `chunk`),
+**43 tests pass**.
+
+**Commit:** M4 schemas + validator on `main`.

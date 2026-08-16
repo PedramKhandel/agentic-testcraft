@@ -6,9 +6,7 @@ import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-
-from .provenance import SourceRef
-
+from typing import Any
 
 SLUG_RX = re.compile(r"[^a-z0-9]+")
 
@@ -28,7 +26,7 @@ def strip_prefix(text: str, prefix: str) -> str:
 class LineMap:
     """Maps 1-based clean line numbers to 1-based source (original) line lists."""
 
-    entries: list[dict] = field(default_factory=list)
+    entries: list[dict[str, Any]] = field(default_factory=list)
     _by_clean: dict[int, list[int]] = field(default_factory=dict, repr=False)
 
     def __post_init__(self) -> None:
@@ -36,9 +34,9 @@ class LineMap:
             self._by_clean[int(entry["clean_line"])] = list(entry["source_lines"])
 
     @classmethod
-    def load(cls, path: Path) -> "LineMap":
+    def load(cls, path: Path) -> LineMap:
         lm = cls()
-        with open(path, "r", encoding="utf-8") as fh:
+        with open(path, encoding="utf-8") as fh:
             for line in fh:
                 if not line.strip():
                     continue
@@ -78,8 +76,8 @@ class Chunk:
     subsections: list[str] = field(default_factory=list)
     aliases: list[str] = field(default_factory=list)
 
-    def to_record(self, file_sha256: str) -> dict:
-        ref: dict = {"source_id": "book", "file_sha256": file_sha256}
+    def to_record(self, file_sha256: str) -> dict[str, Any]:
+        ref: dict[str, Any] = {"source_id": "book", "file_sha256": file_sha256}
         if self.source_start_line:
             ref["markdown_start_line"] = self.source_start_line
         if self.source_end_line:

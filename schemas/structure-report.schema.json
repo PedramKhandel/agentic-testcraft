@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-testcraft.dev/schemas/structure-report.schema.json",
+  "title": "Structure Report",
+  "description": "Validity summary emitted by the Stage-3 splitter (structure.json).",
+  "type": "object",
+  "required": ["file_sha256", "chunk_count", "by_kind", "by_chapter_kind", "completeness_problems"],
+  "additionalProperties": false,
+  "properties": {
+    "file_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "generated_at": { "type": ["string", "null"] },
+    "chunk_count": { "type": "integer", "minimum": 0 },
+    "by_kind": { "type": "object", "additionalProperties": { "type": "integer" } },
+    "by_chapter_kind": { "type": "object", "additionalProperties": { "type": "integer" } },
+    "completeness_problems": { "type": "array", "items": { "type": "string" } }
+  }
+}
