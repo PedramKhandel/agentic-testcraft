@@ -67,8 +67,8 @@ RE_BR = re.compile(r"<br\s*/?>", re.IGNORECASE)
 # boundaries (e.g. "sniff test", "number of") and must NOT be joined.
 RE_FL = re.compile(r"([a-z]{2,})fl ([a-z]{2,})")
 RE_FI = re.compile(r"([a-z]{2,})fi ([a-z]{2,})")
-# Heading bold, e.g. "###### **Name**"
-RE_HEADING_BOLD = re.compile(r"^(#{1,6})\s+\*\*(.+?)\*\*\s*$")
+# Heading emphasis, e.g. "###### **Name**" or "###### _Name_" -> "###### Name"
+RE_HEADING_BOLD = re.compile(r"^(#{1,6})\s+(\*{2}|_{1,2})(.+?)(\*{2}|_{1,2})\s*$")
 # Page headers inserted by the conversion: "Chapter N  <Title>"
 RE_PAGE_HEADER = re.compile(r"^(Chapter|Part)\s+\d+\s.+$")
 
@@ -132,11 +132,24 @@ def _join_ligatures(line: Line) -> Line:
     return line
 
 
-def _strip_heading_bold(line: Line) -> Line:
-    """``###### **Name**`` -> ``###### Name`` (bold is redundant inside a heading)."""
+def _strip_heading_emphasis(line: Line) -> Line:
+    """``###### **Name**`` / ``###### _Name_`` -> ``###### Name``.
+
+    Emphasis is redundant inside a heading and obscures entity-name matching.
+    Handles the symmetric ``**…**`` and ``_…_`` forms that the conversion
+    produces.
+    """
     m = RE_HEADING_BOLD.match(line.text)
     if m:
-        return line.copy_with(f"{m.group(1)} {m.group(2)}", "strip_heading_bold")
+        title = m.group(3).strip().strip("*_").strip()
+        if title:
+            return line.copy_with(f"{m.group(1)} {title}", "strip_heading_emphasis")
+    # Asymmetric italic-only heading like "###### _Name_" that missed above.
+    m = re.match(r"^(#{1,6})\s+_+(.+)_+\s*$", line.text)
+    if m:
+        title = m.group(2).strip().strip("*_").strip()
+        if title:
+            return line.copy_with(f"{m.group(1)} {title}", "strip_heading_emphasis")
     return line
 
 
@@ -184,7 +197,7 @@ TRANSFORM_RULES: list = [
     _unwrap_sup,
     _remove_strikethrough_artifacts,
     _join_ligatures,
-    _strip_heading_bold,
+    _strip_heading_emphasis,
     _strip_trailing_ws,
 ]
 # ``_convert_breaks`` is applied separately because it may split a line.

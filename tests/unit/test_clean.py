@@ -101,10 +101,12 @@ def test_break_conversion_splits_lines():
     assert "<br" not in out
 
 
-def test_heading_bold_stripped():
+def test_heading_emphasis_stripped():
     out = clean_text("###### **Assertion Method** ").text
     assert out.startswith("###### Assertion Method")
-    assert "**" not in out
+    out2 = clean_text("###### _Smells in This Chapter_").text
+    assert out2.startswith("###### Smells in This Chapter")
+    assert "**" not in out and "_" not in out
 
 
 def test_comments_removed_but_picture_text_preserved():
