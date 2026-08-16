@@ -190,3 +190,61 @@ all knowledge artifacts valid
 **43 tests pass**.
 
 **Commit:** M4 schemas + validator on `main`.
+
+---
+
+## M5 — Extraction (native-agent)
+
+**How:** `extract.py` with a provider abstraction (build-plan *Provider
+abstraction*).  No LLM credentials are present in the environment, so the
+``native-agent`` provider performs **deterministic, structural extraction**
+directly from the cleaned book (the plan explicitly permits this: *"the
+implementation agent may perform extraction natively in semantic batches, but
+it must still write records through the same validators and provenance
+system"*).
+
+- For each knowledge chunk, read its provenance line span from
+  `book.cleaned.md` and split it into `(heading, body)` segments (the first
+  `######` is the entity title and is skipped).
+- Map the book's canonical subsection headings onto schema fields verbatim —
+  **no text is invented** (per the extraction prompt contract):
+  - **patterns**: `problem` = the italic problem question `_…?_`; `intent`
+    = the bold essence definition `**…**`; `solution` = the *How It Works*
+    body; `context/forces/use_when/implementation_variations` from matching
+    subsections.
+  - **smells**: `summary` = the declarative "It is difficult…" problem
+    sentence (an H6); `symptoms/impact/causes/detection_heuristics` from the
+    matching subsection bullet lists (first occurrence only, so nested
+    `Cause: …` sub-sections don't duplicate).
+  - **goals**: `summary` = the intro paragraph.
+  - **principles**: `statement` = the intro paragraph; `aliases` from an
+    *Also known as:* line.
+- Required fields fall back to the chunk's own intro prose or title (still
+  source-faithful), never to model knowledge.
+- Smell ids are remapped (`code:`/`behavior:`/`project:` → `smell:`) to match
+  `smell.schema.json`.
+- Output written to `knowledge/book/{patterns,smells,goals,principles}.jsonl`;
+  every record is instantiated through its pydantic model (so invalid records
+  can never be written) and re-checked by `validate-knowledge`.
+- `openai`/`anthropic`/`google` providers are stubbed behind the same
+  abstraction and raise if their API key env var is absent.
+
+**Outputs (`knowledge/book/`):** `patterns.jsonl` (50), `smells.jsonl` (15),
+`goals.jsonl` (13), `principles.jsonl` (13) = **91 records**, each carrying
+`source_refs` back to the original Markdown.
+
+**Verification:**
+```
+agentic-testcraft extract          -> extracted 91 knowledge records via native-agent
+agentic-testcraft validate-knowledge
+    goals.jsonl:       13/13 valid
+    patterns.jsonl:   50/50 valid
+    smells.jsonl:     15/15 valid
+    principles.jsonl: 13/13 valid
+all knowledge artifacts valid
+```
+
+**Quality gates:** ruff clean, mypy clean (`extract`, `schemas`, `structure`,
+`chunk`), **55 tests pass**.
+
+**Commit:** M5 extraction + provider abstraction on `main`.
