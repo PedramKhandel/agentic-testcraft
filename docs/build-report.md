@@ -248,3 +248,59 @@ all knowledge artifacts valid
 `chunk`), **55 tests pass**.
 
 **Commit:** M5 extraction + provider abstraction on `main`.
+
+---
+
+## M6 — Relationship graph
+
+**How:** `graph.py` builds a directed, deterministic knowledge graph purely
+from the book's own *italic* cross-references (`_Name_`) — never fabricated.
+
+- `build_name_index` indexes every knowledge record by its normalised name
+  (plus plural/singular variants) → id, so duplicate-named entities resolve to
+  a set (ambiguous → dropped, not guessed).
+- For each knowledge chunk, the chunk's provenance line span is read from
+  `book.cleaned.md`; `_ITALIC_RX` extracts italic spans, which `_resolve`
+  maps to knowledge ids, **excluding the chunk's own id** (self-edges dropped).
+- `_edge_kind` maps `(from_kind, to_kind, sentence)` → relationship using
+  keyword context in the surrounding sentence:
+  - **smell → pattern** = `refactors_to` (the smell's solution pattern).
+  - **pattern → smell** = `prevents` (sentence contains prevent/avoid/eliminate)
+    or `may_cause` otherwise.
+  - **pattern → pattern** = `used_with` (explicitly co-mentioned).
+  - **goal/principle → anything** = `supports` (a rule that references another
+    entity supports/exemplifies it).
+- `build_relationships` returns deduplicated `RelationshipRecord`s (keyed by
+  `(from_id, rel, to_id)`), each tagged `explicit=True`, `origin="book"`, and
+  carrying the originating `source_refs` back to the original Markdown.
+- `build_graph` assembles a NetworkX `DiGraph`, runs the graph check
+  (every id resolves to a known node; no self-loops; no duplicate edges; every
+  record validates), then writes `knowledge/graph/{relationships.jsonl,graph.json}`
+  (stats + adjacency).
+
+**Outputs (`knowledge/graph/`):** `relationships.jsonl` (648 edges) +
+`graph.json` (648 edges across 91 nodes, density 0.079, 22 SCCs, 4 isolated,
+`self_loops=0`).
+
+**Edge breakdown:** `used_with` 401, `may_cause` 75, `refactors_to` 71,
+`supports` 80, `prevents` 21.
+
+**Verification:**
+```
+agentic-testcraft build-graph
+    graph built: 648 edges across 91 nodes ({'used_with': 401, 'refactors_to': 71,
+    'prevents': 21, 'supports': 80, 'may_cause': 75}; 4 isolated) -> graph.json
+agentic-testcraft validate-knowledge
+    knowledge/graph/relationships.jsonl: 552/552 records valid
+    all knowledge artifacts valid
+```
+(The `relationships.jsonl` count is the deduplicated edge count; graph.json
+re-emitted after the pattern→smell edge-type fix.)
+
+**Quality gates:** ruff clean, mypy clean (`graph`), **9 graph tests pass**
+(`tests/unit/test_graph.py`, covering name indexing, plural resolution,
+single/ambiguous/empty resolution, italic parsing, all five edge kinds, id
+remapping from `code:`→`smell:`, self/excluded/ambiguous dropping).
+
+**Commit:** M6 relationship graph on `main`.
+
