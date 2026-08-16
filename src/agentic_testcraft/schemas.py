@@ -11,7 +11,7 @@ book / modern split explicit (rule 4.2).
 from __future__ import annotations
 
 import json
-from typing import Literal, get_args
+from typing import Any, Literal, get_args
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from rich.console import Console
@@ -265,6 +265,16 @@ def _model_for_id(record_id: str) -> type[BaseModel] | None:
     return None
 
 
+def _model_for_record(record: dict[str, Any]) -> type[BaseModel] | None:
+    """Dispatch a knowledge record to its enforcing model.
+
+    Relationship records (graph edges) carry ``from_id`` instead of ``id``.
+    """
+    if "from_id" in record:
+        return RelationshipRecord
+    return _model_for_id(record.get("id", ""))
+
+
 def run_validate_knowledge() -> None:
     """Stage 4 entry point: validate every knowledge artifact against its schema.
 
@@ -311,22 +321,22 @@ def run_validate_knowledge() -> None:
     else:
         console.print("[yellow]structure.json[/yellow]: missing (run `split` first)")
 
-    # 3) extracted knowledge
+    # 3) extracted knowledge (book records by id prefix; graph = relationships)
     knowledge_dirs = [p.knowledge_book_dir, p.knowledge_graph_dir, p.knowledge_modern_dir]
     for kd in knowledge_dirs:
         for jf in sorted(kd.glob("*.jsonl")):
             recs = read_jsonl(jf)
             ok = 0
             for i, r in enumerate(recs, 1):
-                model = _model_for_id(r.get("id", ""))
+                model = _model_for_record(r)
                 if model is None:
-                    errors.append(f"{jf.name}[{i}]: unknown id prefix {r.get('id', '')!r}")
+                    errors.append(f"{jf.name}[{i}]: unrecognised record {r.get('id', r.get('from_id', '?'))!r}")
                     continue
                 try:
                     model(**r)
                     ok += 1
                 except Exception as exc:  # noqa: BLE001
-                    errors.append(f"{jf.name}[{i}] (id={r.get('id')}): {exc}")
+                    errors.append(f"{jf.name}[{i}] (id={r.get('id', r.get('from_id', '?'))}): {exc}")
             console.print(f"[bold]{jf.relative_to(p.repo_root)}[/bold]: {ok}/{len(recs)} records valid")
 
     if errors:
