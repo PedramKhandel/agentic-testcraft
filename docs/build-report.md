@@ -376,4 +376,38 @@ full suite **77 tests pass**.
 
 **Commit:** M7 synthesis on `main`.
 
+---
+
+## Repository policy — source publication & merge reconciliation
+
+**Git merge reconciliation (between original `bc045ec` M6 and local amended
+M6 + M7 work):** an in-progress merge (initiated by an upstream sync to
+`origin/main = bc045ec`) left conflicts in `graph.py`, `schemas.py`, and
+`build-report.md`. All three were resolved by keeping the local HEAD versions,
+which are **strict supersets** of the remote M6:
+
+- `graph.py`: local kept `nx.MultiDiGraph` (remote was the older `DiGraph`
+  that collapsed parallel edges → 648 vs 660 relationships). Taking the local
+  version preserved every remote code path and the required MultiGraph fix.
+- `schemas.py`: local kept the M6 `_model_for_record`/`from_id` dispatch plus
+  the M7 `rule:`-prefix dispatch and `knowledge_synthesized_dir` validation.
+- `build-report.md`: remote contributed no tail content; local narrative (M6
+  MultiGraph note + M7 section) retained as the single coherent narrative.
+
+Verified post-resolution: `build-graph` → 660 edges, 0 graph-check problems;
+`synthesize` → 93 rules; `validate-knowledge` → 119/119, 660/660, 93/93 valid.
+Merge committed (`1ab36ed`); working tree clean; normal non-force-push history.
+
+**Source-publication policy override:** the repository owner explicitly
+authorized tracking the supplied PDF and Markdown of *xUnit Test Patterns* in
+this repository as immutable inputs. `.gitignore` no longer ignores them; both
+files are tracked (content unchanged); provenance/hash safeguards (SHA-256 in
+`.local/work/source-report.json`, cleaner writes a separate `book.cleaned.md`)
+are preserved. Docs (`NOTICE.md`, `CONTRIBUTING.md`, `source-methodology.md`,
+`architecture.md`, `AGENTIC_TESTCRAFT_BUILD.md` §1.2 & Stage 19) updated so
+none claim the sources "must never be committed"; the Stage 19 source-leak
+validator now protects generated-knowledge concision + source immutability
+rather than "source files are not tracked". Decision record:
+`docs/decisions/source-publication.md`.
+
 
