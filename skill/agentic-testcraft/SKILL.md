@@ -1,7 +1,10 @@
 ---
 title: Agentic Testcraft
-version: 1.0.0
-status: stable
+name: agentic-testcraft
+description: "Judgment-first testing skill: design, write, review, refactor, and validate maintainable tests with behavior-focused, principled fixtures and test doubles."
+version: 1.0.0rc1
+status: release-candidate
+compatibility: "Python 3.10+; pytest 8+. Mutation/fuzz tools (mutmut, atheris) are Linux/macOS-primary with Windows via WSL; core decision rules are platform-agnostic."
 evidence_base: knowledge/synthesized/skill-traceability.json
 generated_from: knowledge/synthesized/decision-rules.jsonl + knowledge/modern/
 last_review: 2026-08-17
@@ -58,8 +61,10 @@ requirement/behavior; implementation detail; incidental call.
 ### 3. Choose the smallest useful test boundary
 Prefer the smallest boundary that faithfully verifies the behavior. Use a larger
 boundary only when behavior intrinsically crosses components or isolation would
-test the wrong thing.
-- rule: R3, `references/test-boundaries.md`
+test the wrong thing. If the SUT is not seam-friendly (tight coupling, IO buried
+deep), a minimal behavior-preserving testability refactor may enable a smaller
+boundary — never `if testing` forks.
+- rule: R3, R6, `references/test-boundaries.md`, `references/testability.md`
 
 ### 4. Choose verification strategy
 Default to **state verification** through a stable public interface when it

@@ -1,10 +1,11 @@
 {
   "name": "agentic-testcraft",
-  "version": "1.0.0",
-  "status": "stable",
+  "version": "1.0.0rc1",
+  "status": "release-candidate",
   "title": "Agentic Testcraft",
   "evidence_base": "knowledge/synthesized/skill-traceability.json",
-  "generated_at": "2026-08-17T10:07:46+00:00",
+  "compatibility": "Python 3.10+; pytest 8+. Mutation/fuzz tools (mutmut, atheris) are Linux/macOS-primary with Windows via WSL; core decision rules are platform-agnostic.",
+  "generated_at": "2026-08-17T12:11:24+00:00",
   "file_count": 13,
   "files": [
     {
@@ -81,9 +82,9 @@
     },
     {
       "path": "SKILL.md",
-      "bytes": 7506,
-      "sha256": "20d434fc4d7e8f2dc1c1474ed14b55d117915072ba30974a31a6182df2bc719a",
-      "lines": 165
+      "bytes": 8094,
+      "sha256": "3ac838f58a4ed9c83f0dc114d238fe27c5e2d7f68dbbf9b71a68d4f8f133d27d",
+      "lines": 170
     }
   ]
 }

@@ -55,6 +55,7 @@ def run_bundle(skill_dir: Path | None = None) -> dict[str, object]:
         "status": fm.get("status", "wip"),
         "title": fm.get("title", ""),
         "evidence_base": fm.get("evidence_base", ""),
+        "compatibility": fm.get("compatibility", ""),
         "generated_at": datetime.now(UTC).replace(microsecond=0).isoformat(),
         "file_count": len(files),
         "files": files,

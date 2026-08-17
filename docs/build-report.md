@@ -570,38 +570,110 @@ milestone.
 ## Milestone M9 — Author & package the production Agent Skill
 
 Authored `skill/agentic-testcraft/SKILL.md` (concise, < 400 lines, 12-step runtime
-workflow + flakiness guardrail) plus `skill/agentic-testcraft/references/` (11 catalog
-docs + `ecosystems/README.md`) per the progressive-disclosure principle (§Stage 9).
-Wrote the Stage-9 tooling in `src/agentic_testcraft/skill_validate.py` (`run_validate_skill`
-→ `load_front_matter` + `_check_skeleton`: front-matter keys/status, ≤400 lines,
-no TODO/FIXME placeholders, no verbatim-book excerpt, unique R1–R8 / step numbers,
-resolvable references each carrying an Evidence line, evidence-base file exists) and
-`src/agentic_testcraft/bundle.py` (`run_bundle` → `skill/agentic-testcraft/.skill-manifest.json`
-with file list + sha256 + meta, then re-runs the Stage-9 gate). Wired both as `agent`
- subcommands (`validate-skill`, `bundle`) in `cli.py`; removed the now-unused `Optional`
-import and switched `extract`/`eval` annotations to `str | None`.
+workflow + flakiness guardrail) plus `skill/agentic-testcraft/references/` (11
+catalog docs + `ecosystems/README.md`) per progressive disclosure (§Stage 9).
 
-Built `knowledge/synthesized/skill-traceability.json` (13 mappings: SKILL steps 1–12,
-R1–R8, + flakiness guardrail) linking each to a `rule:`/`pattern:`/`smell:`/`principle:`/
-`goal:` ID and a `modern:` ID. Committed the skill package incl. its manifest (the
-manifest is a deterministic, regenerable lockfile-style artifact, not gitignored; the
-regenerable `*.jsonl` knowledge outputs remain ignored per `.gitignore`).
+**M9 conformance update (spec research, 2026-08-17):** Researched the canonical
+Agent Skills spec (https://agentskills.io) and the Claude Code frontmatter
+reference (https://docs.anthropic.com/en/docs/claude-code/skills). The spec
+requires `name` + `description` at minimum; `compatibility` is an optional spec
+field. `SKILL.md` frontmatter now carries `name`, `description`, and
+`compatibility`; `version` is `1.0.0rc1` and `status` is `release-candidate`
+(the skill is functional but not yet eval-validated — M10); `title`/`version`/
+`status` remain project-internal fields. `skill_validate.REQUIRED_FRONT_MATTER`
+now enforces `name`+`description`, and `VALID_STATUS` accepts
+`release-candidate`. Also closed a real gap: **R6 (testability refactoring) was
+never cited in `SKILL.md`** — it is now referenced at step 3 via
+`references/testability.md`, guarded by `test_committed_skill_cites_every_rule_and_step`.
+
+Wrote the Stage-9 tooling in `src/agentic_testcraft/skill_validate.py`
+(`run_validate_skill` → `load_front_matter` + `_check_skeleton`: required
+front-matter keys/status, ≤400 lines, no TODO/FIXME placeholders, no verbatim
+book excerpt, unique R1–R8 / step numbers, resolvable `references/` links each
+carrying an Evidence line, evidence-base file exists) and
+`src/agentic_testcraft/bundle.py` (`run_bundle` → `skill/agentic-testcraft/.skill-manifest.json`
+with file list + sha256 + meta, then re-runs the Stage-9 gate). Wired both as
+`agent` subcommands (`validate-skill`, `bundle`) in `cli.py`; removed the
+now-unused `Optional` import and switched `extract`/`eval` annotations to
+`str | None` (and added `compatibility` to the manifest).
+
+Built `knowledge/synthesized/skill-traceability.json` (21 skill-rule mappings:
+SKILL steps 1–12, R1–R8, and the flakiness guardrail), each linking to a
+`rule:`/`pattern:`/`smell:`/`principle:`/`goal:` ID and a `modern:` ID. The four
+M8f modern records (random-test-ordering, snapshot-golden, api-boundary-mocking,
+cross-version-matrix) are wired into the SKILL:1/3/4/8/9/11 mappings. Committed
+the skill package incl. its manifest (deterministic, regenerable lockfile-style
+artifact, not gitignored; the regenerable `*.jsonl` knowledge outputs remain
+ignored per `.gitignore`).
 
 **Evidence:** run on the real skill tree — `validate-skill` → `ok: skill valid
-(Agentic Testcraft v1.0.0 stable); 0 warning(s)`; `bundle` → manifest of 13 files.
+(Agentic Testcraft v1.0.0rc1 release-candidate); 0 warning(s)`; `bundle` →
+manifest of 13 files.
 
-**New tests:** `tests/unit/test_skill_validate.py` (8 cases incl. missing-front-matter
-keys, invalid status, broken links, duplicate rules, verbatim-excerpt, >400 lines) and
-`tests/unit/test_bundle.py` (2 cases: manifest writes + validates; validation failure
-propagates).
+**New tests:** `tests/unit/test_skill_validate.py` (17 cases incl. missing-front-matter
+keys for the new `name`/`description`, invalid status, `release-candidate` valid,
+broken links, duplicate rules, verbatim-excerpt, >400 lines, + the committed-skill
+R1–R8/step-1..12 coverage regression guard) and `tests/unit/test_bundle.py`
+(2 cases: manifest writes + validates; validation failure propagates).
 
-**Quality gates:** ruff clean; mypy clean on new src files (`skill_validate.py`,
-`bundle.py`); `cli.py` introduces no new mypy error (only the pre-existing `evals`
-import-untyped note, M10). Full suite: **100 tests pass** (ruff-randomized order).
-Pre-existing strict-mypy noise in untouched test/source modules is out of scope.
+**Quality gates:** ruff clean; mypy clean on new/touched src files
+(`skill_validate.py`, `bundle.py`); `cli.py` introduces no new mypy error (only the
+pre-existing `evals` import-untyped note, M10). Full suite: **112 tests pass**
+(ruff-randomized order). Pre-existing strict-mypy noise in untouched test/source
+modules is out of scope.
 
-**Commit:** M9 production skill package (SKILL.md, references, .skill-manifest.json,
-skill_validate.py, bundle.py, cli.py, tests, build-report). Leaves M10 (eval harness)
-as the next step.
+**Commit:** M9 conformance (SKILL.md frontmatter + R6 citation, skill_validate,
+bundle, traceability, tests, skill-compatibility.md).
+
+---
+
+## Pre-M10 semantic readiness audit
+
+Before opening M10 (eval harness + baseline), a source-faithfulness pass
+verifies the knowledge pipeline that *feeds* the skill, so the skill is not
+evaluated on fabricated or stale grounding.
+
+### M5 extraction audit (2nd-pass)
+
+- `src/agentic_testcraft/extract.py` now classifies each book record with a
+  `Confidence` (certain / warning / historical) and emits
+  `knowledge/book/extraction-coverage-report.json` (real field-coverage: e.g.
+  `use_when` 40, `intent` 31, `implementation_variations` 49, `refactorings`
+  37; `benefits`/`costs`/`risks` intentionally null because the book's Pattern
+  Form has no such subsections — documented, not fabricated).
+- 4 grounded narrative rules emitted to `knowledge/book/narrative-rules.jsonl`
+  (from Ch.3 / Ch.4 / Philosophy), validated by `NarrativeRecord`
+  (`schemas.py`) + `schemas/narrative.schema.json`.
+- Low-confidence / ambiguous record lists published in
+  `docs/methodology/extraction-audit.md` (Stage 5 second-pass source-faithfulness
+  review).
+
+### M6 / graph
+
+- `knowledge/graph/relationships.jsonl`: 660 edges; reference resolution now
+  rejects unresolved `evidence_ids` / `affected_knowledge_ids` cross-record refs
+  (`validate-knowledge` → "all cross-record refs resolve").
+
+### M7 synthesis
+
+- `knowledge/synthesized/decision-rules.jsonl`: 93 rules;
+  `validate-knowledge` enforces 93/93.
+
+### M8 modernization
+
+- 17 `modern:*` records (13 + M8f addendum), each with absolute-URL
+  `official_sources` + `2026-08-17` review date, validated end-to-end.
+  `docs/decisions/modernization-topic-coverage.md` records the add /
+  review-exclude / fold / exclude decisions.
+
+### M9 skill package
+
+- `SKILL.md` v1.0.0rc1 `release-candidate`, spec-conformant frontmatter
+  (`name`/`description` required; `compatibility` optional); R1–R8 all cited;
+  13 files in `.skill-manifest.json`; `validate-skill` + `bundle` pass.
+
+**Gate:** ruff clean (touched files); mypy clean on touched `src/`; **112 tests
+pass**; all `knowledge/` artifacts valid; all cross-record references resolve;
+no verbatim book excerpts in the skill. Pre-M10 status: **ready to open M10.**
 
 

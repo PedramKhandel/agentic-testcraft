@@ -15,8 +15,8 @@ import typer
 
 from .config import load_settings
 
-REQUIRED_FRONT_MATTER: set[str] = {"title", "version", "status", "evidence_base"}
-VALID_STATUS: set[str] = {"wip", "draft", "stable"}
+REQUIRED_FRONT_MATTER: set[str] = {"title", "name", "description", "version", "status", "evidence_base"}
+VALID_STATUS: set[str] = {"wip", "draft", "stable", "release-candidate"}
 MAX_SKILL_LINES = 400
 PLACEHOLDER_RE = re.compile(r"\b(TODO|FIXME|XXX|HACK)\b", re.IGNORECASE)
 BOOK_QUOTE_RE = re.compile(

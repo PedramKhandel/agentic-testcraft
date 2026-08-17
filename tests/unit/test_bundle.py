@@ -10,6 +10,8 @@ from agentic_testcraft.bundle import run_bundle
 MINIMAL_FRONT = """\
 ---
 title: Demo Skill
+name: demo-skill
+description: A demo skill for validation tests.
 version: 1.0.0
 status: stable
 evidence_base: knowledge/synthesized/skill-traceability.json
