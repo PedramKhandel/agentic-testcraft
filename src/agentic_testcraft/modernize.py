@@ -191,7 +191,196 @@ _M8A: list[_ModItem] = [
 
 
 # --------------------------------------------------------------------------- #
-# M8b — Modern integration testing (disposable containers, hermeticity)         #
+# M8c — Modern test-effectiveness (mutation, property-based, contract, fuzz)    #
+# --------------------------------------------------------------------------- #
+
+_M8C: list[_ModItem] = [
+    _ModItem(
+        _rec(
+            id="modern:mutation-testing",
+            topic="Mutation testing as a test-quality gate",
+            book_position=(
+                "The 2007 book treats test enumeration and selection as manual "
+                "risk management (Test Enumeration / Test Selection, coverage of "
+                "equivalence classes and boundary values); it has no notion of "
+                "automatically mutating the SUT to measure whether tests actually "
+                "detect faults."
+            ),
+            modern_position=(
+                "Mutmut 'is a mutation testing system for Python... a mutation "
+                "testing tool that modifies your source code to find out if your "
+                "test suite is able to stop it.' A surviving mutant means a test "
+                "does not actually catch that kind of fault; mutation score = "
+                "detected mutants / total mutants. Run `mutmut run`, inspect "
+                "`mutmut results`, and add a test that kills each surviving mutant. "
+                "(Linux/macOS primary; Windows via WSL.)"
+            ),
+            status="expanded",
+            rationale=(
+                "The book's manual risk-based design leaves holes in the safety net "
+                "(Tests as Safety Net) invisible; mutation testing makes them "
+                "measurable. 2007 predates practical, automatable mutation testing "
+                "for mainstream languages."
+            ),
+            sources=["https://mutmut.readthedocs.io/en/latest/"],
+            affected=[
+                "pattern:test-enumeration",
+                "pattern:test-selection",
+                "pattern:parameterized-test",
+                "principle:verify-one-condition-per-test",
+                "goal:tests-as-safety-net",
+                "goal:bug-repellent",
+                "goal:repeatable-test",
+            ],
+            rule_change=(
+                "Treat mutation score as a quality gate: run mutmut (or an "
+                "equivalent mutation tool) in CI, and for each surviving mutant add "
+                "a failing test that kills it — a surviving mutant is a missing "
+                "assertion, not a passing test."
+            ),
+        ),
+        "Test-effectiveness methods",
+    ),
+    _ModItem(
+        _rec(
+            id="modern:property-based-testing",
+            topic="Property-based testing for input-space exploration",
+            book_position=(
+                "The value/specification patterns (Literal Value, Derived Value, "
+                "Generated Value, Data-Driven Test, Parameterized Test) address "
+                "hand- or script-supplied example inputs and tester-enumerated "
+                "equivalence/boundary classes; there is no automated generation-and-"
+                "shrinking of inputs from stated invariants."
+            ),
+            modern_position=(
+                "Hypothesis 'is a property-based testing library... you write tests "
+                "which should pass for all inputs... letting Hypothesis randomly "
+                "choose which inputs to check — including edge cases,' then shrinks "
+                "each failing example to a minimal reproducer and records it in its "
+                "example database. 'A single property-based test can cover hundreds "
+                "of cases that would otherwise need to be hand written.'"
+            ),
+            status="expanded",
+            rationale=(
+                "Hand-authored example generation misses edge cases and is "
+                "labor-intensive; Hypothesis finds boundary and interaction bugs "
+                "the book's Generated/Derived Values likely miss. 2007 predates "
+                "Hypothesis."
+            ),
+            sources=["https://hypothesis.readthedocs.io/en/latest/"],
+            affected=[
+                "pattern:generated-value",
+                "pattern:derived-value",
+                "pattern:literal-value",
+                "pattern:parameterized-test",
+                "pattern:data-driven-test",
+                "principle:verify-one-condition-per-test",
+                "goal:bug-repellent",
+            ],
+            rule_change=(
+                "State the invariant (property) and let Hypothesis generate inputs "
+                "and shrink failures; when it reports a falsifying example, reduce "
+                "it to a minimal case and add it as a permanent regression test."
+            ),
+        ),
+        "Test-effectiveness methods",
+    ),
+    _ModItem(
+        _rec(
+            id="modern:contract-testing",
+            topic="Consumer-driven contract testing for service boundaries",
+            book_position=(
+                "For layered/service architectures the book offers Layer Test, "
+                "Back-Door Manipulation, and Shared Fixture, plus integration tests "
+                "over a shared database; cross-service integration is validated "
+                "end-to-end rather than at a boundary contract."
+            ),
+            modern_position=(
+                "Pact is 'the de-facto API contract testing tool. Replace "
+                "expensive and brittle end-to-end integration tests with fast, "
+                "reliable and easy to debug unit tests.' Consumer tests record "
+                "HTTP interactions against a stub provider; provider tests verify "
+                "the real provider honors every recorded request via a Pact Broker; "
+                "'powerful matching rules prevents brittle tests' and 'integrates "
+                "with Pact Broker for powerful CI/CD workflows.'"
+            ),
+            status="expanded",
+            rationale=(
+                "End-to-end integration across independently-deployed services is "
+                "slow and brittle (Fragile Test) — the 'expensive and brittle "
+                "end-to-end integration tests' the modern position replaces. 2007 "
+                "had no consumer-driven contract tooling."
+            ),
+            sources=[
+                "https://raw.githubusercontent.com/pact-foundation/pact-python/main/README.md",
+                "https://docs.pact.io/",
+            ],
+            affected=[
+                "pattern:layer-test",
+                "pattern:back-door-manipulation",
+                "pattern:shared-fixture",
+                "smell:fragile-test",
+                "smell:erratic-test",
+                "principle:use-the-front-door-first",
+                "principle:isolate-the-sut",
+                "goal:tests-as-safety-net",
+            ],
+            rule_change=(
+                "For service boundaries, express consumer expectations as Pact "
+                "contracts and verify the provider against them in CI via a Pact "
+                "Broker; retire brittle cross-service end-to-end tests that only "
+                "duplicate the contract."
+            ),
+        ),
+        "Test-effectiveness methods",
+    ),
+    _ModItem(
+        _rec(
+            id="modern:fuzz-testing",
+            topic="Coverage-guided fuzz testing for parsers and untrusted input",
+            book_position=(
+                "Input generation is covered by Literal Value, Derived Value, "
+                "Generated Value, Data-Driven Test, and Parameterized Test — all "
+                "tester-authored, example-based; there is no automated, "
+                "coverage-guided input generation."
+            ),
+            modern_position=(
+                "Atheris is 'a coverage-guided Python fuzzing engine... based "
+                "off of libFuzzer... supports fuzzing of Python code, but also "
+                "native extensions.' It instruments bytecode, mutates input bytes, "
+                "and reports a crash on any uncaught exception; supports custom "
+                "mutators and structure-aware fuzzing via libprotobuf-mutator, and "
+                "integrates with OSS-Fuzz. (Linux/macOS primary; Windows via WSL.)"
+            ),
+            status="expanded",
+            rationale=(
+                "Hand-authored inputs cannot approach the input-space coverage a "
+                "fuzzer explores for parsers/validators handling untrusted data; "
+                "2007 predates practical Python/libFuzzer coverage-guided fuzzing."
+            ),
+            sources=[
+                "https://raw.githubusercontent.com/google/atheris/master/README.md",
+                "https://opensource.google.com/projects/atheris",
+            ],
+            affected=[
+                "pattern:generated-value",
+                "pattern:test-method",
+                "pattern:data-driven-test",
+                "goal:bug-repellent",
+                "smell:production-bugs",
+            ],
+            rule_change=(
+                "For parsers/validators consuming untrusted input, add "
+                "coverage-guided fuzz tests with atheris (or Hypothesis as a "
+                "fallback); treat any raised exception as a defect to fix."
+            ),
+        ),
+        "Test-effectiveness methods",
+    ),
+]
+
+# --------------------------------------------------------------------------- #
+# M8b — Modern integration testing (disposable containers, hermeticity)        #
 # --------------------------------------------------------------------------- #
 
 _M8B: list[_ModItem] = [
@@ -290,10 +479,11 @@ _M8B: list[_ModItem] = [
 
 MODERN_RECORDS: list[dict[str, Any]] = [item.record for item in _M8A] + [
     item.record for item in _M8B
-]
+] + [item.record for item in _M8C]
 _MODERN_CATEGORIES: dict[str, str] = {
     **{item.record["id"]: item.category for item in _M8A},
     **{item.record["id"]: item.category for item in _M8B},
+    **{item.record["id"]: item.category for item in _M8C},
 }
 
 

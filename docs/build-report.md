@@ -457,4 +457,28 @@ agentic-testcraft validate-knowledge
 
 **Commit:** M8b modernization (integration / hermeticity).
 
+---
+
+## M8c — Modernization: test-effectiveness methods
+
+**How:** Researched primary/official documentation for four practices absent from
+the 2007 book — mutation testing (Mutmut), property-based testing (Hypothesis),
+consumer-driven contract testing (Pact), and coverage-guided fuzzing (Atheris).
+Appended 4 `modern:*` records to `src/agentic_testcraft/modernize.py`, each
+citing an absolute `https://` source with a `2026-08-17` review date; re-ran the
+pipeline and re-validated. Records are split into `_M8B` (integration, 2) and
+`_M8C` (test-effectiveness, 4) lists in the source.
+
+| id | topic | status | sources |
+|---|---|---|---|
+| `modern:mutation-testing` | Surviving mutants ⇒ missing assertions; mutmut | expanded | mutmut readthedocs |
+| `modern:property-based-testing` | Hypothesis generates + shrinks inputs from invariants | expanded | hypothesis readthedocs |
+| `modern:contract-testing` | Pact contracts replace brittle cross-service end-to-end tests | expanded | pact-python README + docs.pact.io |
+| `modern:fuzz-testing` | Atheris coverage-guided fuzzing for parsers (libFuzzer) | expanded | atheris GitHub README |
+
+**Verification:** `modernize` → 9 records; `validate-knowledge` →
+`modernization.jsonl: 9/9 valid`; `test_modernize.py` 7/7; ruff + mypy clean.
+
+**Commit:** M8c modernization (test-effectiveness: mutation, property-based, contract, fuzz).
+
 
