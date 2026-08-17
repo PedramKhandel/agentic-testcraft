@@ -676,4 +676,29 @@ evaluated on fabricated or stale grounding.
 pass**; all `knowledge/` artifacts valid; all cross-record references resolve;
 no verbatim book excerpts in the skill. Pre-M10 status: **ready to open M10.**
 
+### M10a evaluation infrastructure
+
+- `src/agentic_testcraft/evals.py` (~980 lines): deterministic Stage-10a eval
+  harness. Ships the committed `CASE_CATALOG` (26 seeded-defect cases), pydantic
+  schemas (`EvalCase`/`CaseDefect`/`RunMetadata`/`RubricScore`/`EvalResult`), the
+  `score_run` scorer (pytest subprocess + AST static scorers + coarse rubric
+  proxies), `compare_runs`/`build_report`, and a Typer `EVAL_APP` with
+  `list-cases` / `init-cases` / `setup` / `score` / `report`.
+- Wired into `cli.py` via `app.add_typer(EVAL_APP, name="eval")`; the old
+  single-arg `eval` shim was removed.
+- `tests/unit/test_evals.py`: catalog integrity (26 unique cases, defect/sut
+  validation, metric/rubric scope), `init-cases` TOML round-trip, `setup_case`
+  base/defect variants, `_parse_outcome` pass/fail ordering, `score_run`
+  caught-vs-weak mutation, JSON schema round-trip, and CLI command surface.
+- `pyproject.toml`: `flake8-bugbear` B008 per-file-ignore for `evals.py` (Typer
+  sub-app command defaults are not auto-recognized by ruff).
+- `.gitignore`: `evals/cases/`, `evals/_sandbox/`, `evals/results/` (regenerable
+  evaluation artifacts).
+- Does **not** simulate a candidate solution: no LLM is invoked; `run_evals`
+  reports `evaluation infrastructure complete; real A/B execution pending`.
+
+**Gate:** ruff clean; mypy strict on touched `src/`; **125 tests pass**;
+`validate-skill` ok; `validate-knowledge` all valid + refs resolve. M10a status:
+**evaluation infrastructure complete; real A/B execution pending** (M10b).
+
 

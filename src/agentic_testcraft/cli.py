@@ -124,14 +124,9 @@ def validate_skill() -> None:
     )
 
 
-@app.command()
-def eval(
-    name: str | None = typer.Argument(None, help="Case name; all if omitted"),
-) -> None:
-    """Stage 10+: run evaluations."""
-    from .evals import run_evals
+from .evals import EVAL_APP  # noqa: E402
 
-    run_evals(name=name)
+app.add_typer(EVAL_APP, name="eval")
 
 
 if __name__ == "__main__":

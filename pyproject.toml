@@ -68,6 +68,12 @@ target-version = "py312"
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "C4", "PT"]
 ignore = ["E501"]
 
+[tool.ruff.lint.per-file-ignores]
+# evals.py defines a Typer sub-app (EVAL_APP) attached via add_typer; its
+# command parameters use typer.Option/Argument() defaults, which ruff B008
+# cannot recognize (not an inline command like cli.py's `app`).
+"src/agentic_testcraft/evals.py" = ["B008"]
+
 [tool.mypy]
 python_version = "3.12"
 strict = true

@@ -33,4 +33,6 @@ knowledge/synthesized/*.md
 knowledge/modern/*.jsonl
 knowledge/modern/current-testing-practices.md
 book.cleaned.md
+evals/cases/
+evals/_sandbox/
 evals/results/
