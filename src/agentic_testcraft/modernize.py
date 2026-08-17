@@ -189,8 +189,112 @@ _M8A: list[_ModItem] = [
     ),
 ]
 
-MODERN_RECORDS: list[dict[str, Any]] = [item.record for item in _M8A]
-_MODERN_CATEGORIES: dict[str, str] = {item.record["id"]: item.category for item in _M8A}
+
+# --------------------------------------------------------------------------- #
+# M8b — Modern integration testing (disposable containers, hermeticity)         #
+# --------------------------------------------------------------------------- #
+
+_M8B: list[_ModItem] = [
+    _ModItem(
+        _rec(
+            id="modern:disposable-integration-containers",
+            topic="Disposable integration dependencies via containers",
+            book_position=(
+                "Meszaros' Database Sandbox / Transaction Rollback Teardown / "
+                "Stored Procedure Test patterns provision a shared database and "
+                "reset its state between tests (often via rollback); the "
+                "Shared/Standard Fixture patterns share fixture state across tests."
+            ),
+            modern_position=(
+                "Provide each integration test with a disposable Docker container "
+                "via Testcontainers, which 'facilitates the use of Docker containers "
+                "for functional and integration testing' (e.g. "
+                "PostgresContainer('postgres:16') spun up per test, with a connection "
+                "URL handed to the test). pytest function-scoped fixtures 'are "
+                "destroyed at the end of the test', so each test gets its own fresh "
+                "instance with no shared mutable state ('making sure tests aren't "
+                "affected by each other')."
+            ),
+            status="expanded",
+            rationale=(
+                "2007 predates Docker (2013) and per-test disposable services. Shared "
+                "mutable state between tests is the leading cause of fragile/erratic "
+                "tests; per-test containers eliminate that coupling without relying on "
+                "rollback discipline."
+            ),
+            sources=[
+                "https://raw.githubusercontent.com/testcontainers/testcontainers-python/main/README.md",
+                "https://docs.pytest.org/en/stable/how-to/fixtures.html",
+            ],
+            affected=[
+                "pattern:database-sandbox",
+                "pattern:transaction-rollback-teardown",
+                "pattern:stored-procedure-test",
+                "pattern:shared-fixture",
+                "pattern:standard-fixture",
+                "smell:fragile-test",
+                "smell:erratic-test",
+                "principle:isolate-the-sut",
+                "principle:keep-tests-independent",
+            ],
+            rule_change=(
+                "For integration tests touching a real database or service, spin up "
+                "a disposable container per test with Testcontainers behind a "
+                "function-scoped pytest fixture; do not share the database across tests."
+            ),
+        ),
+        "Modern integration",
+    ),
+    _ModItem(
+        _rec(
+            id="modern:hermetic-integration",
+            topic="Hermetic integration / function-scoped teardown",
+            book_position=(
+                "Shared/Persistent Fixtures accept shared state that tests reset "
+                "(rollback/teardown) to remain independent; Suite Fixture Setup "
+                "shares state across a group."
+            ),
+            modern_position=(
+                "Prefer function-scoped fixtures that yield a fresh instance and tear "
+                "down immediately after the test ('the fixture is destroyed at the end "
+                "of the test'; teardown runs in reverse order); reserve wider scopes "
+                "for genuinely immutable, reusable fixtures."
+            ),
+            status="clarified",
+            rationale=(
+                "Function scope + mandatory teardown is the modern baseline for "
+                "hermetic tests; shared mutable fixtures are the exception, not the "
+                "default."
+            ),
+            sources=[
+                "https://docs.pytest.org/en/stable/how-to/fixtures.html",
+            ],
+            affected=[
+                "pattern:shared-fixture",
+                "pattern:standard-fixture",
+                "pattern:fresh-fixture",
+                "pattern:suite-fixture-setup",
+                "principle:keep-tests-independent",
+                "principle:isolate-the-sut",
+                "smell:fragile-test",
+            ],
+            rule_change=(
+                "Default fixtures touching external resources to function scope with "
+                "guaranteed teardown; only escalate scope when the fixture is "
+                "immutable and genuinely reusable."
+            ),
+        ),
+        "Modern integration",
+    ),
+]
+
+MODERN_RECORDS: list[dict[str, Any]] = [item.record for item in _M8A] + [
+    item.record for item in _M8B
+]
+_MODERN_CATEGORIES: dict[str, str] = {
+    **{item.record["id"]: item.category for item in _M8A},
+    **{item.record["id"]: item.category for item in _M8B},
+}
 
 
 # --------------------------------------------------------------------------- #

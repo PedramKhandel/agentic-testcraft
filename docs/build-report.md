@@ -444,4 +444,17 @@ agentic-testcraft validate-knowledge
 
 **Commit:** M8a modernization (run-time & determinism).
 
+## M8b — Modernization: modern integration / hermeticity
+
+**Records (2), sourced to Testcontainers + pytest fixtures:**
+
+| id | topic | status | sources |
+|---|-------|--------|---------|
+| `modern:disposable-integration-containers` | Per-test Docker containers (Testcontainers) | expanded | testcontainers-python README + pytest fixtures |
+| `modern:hermetic-integration` | Function-scoped fixtures + guaranteed teardown | clarified | pytest fixtures |
+
+**Verification:** `modernize` → 5 records; `validate-knowledge` → `modernization.jsonl: 5/5 valid`; 7 tests; ruff + mypy clean.
+
+**Commit:** M8b modernization (integration / hermeticity).
+
 
