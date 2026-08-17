@@ -481,4 +481,24 @@ pipeline and re-validated. Records are split into `_M8B` (integration, 2) and
 
 **Commit:** M8c modernization (test-effectiveness: mutation, property-based, contract, fuzz).
 
+---
+
+## M8d — Modernization: service & browser testing
+
+**How:** Researched primary/official documentation for two UI/service testing
+domains with no 2007 equivalent — Playwright (cross-browser code-first
+automation) and pytest-httpserver (in-process HTTP server per test). Appended 2
+`modern:*` records to `src/agentic_testcraft/modernize.py` in a new `_M8D` list,
+each citing an absolute `https://` source with a `2026-08-17` review date.
+
+| id | topic | status | sources |
+|---|---|---|---|
+| `modern:browser-ui-assertions` | Playwright auto-waiting, selectors, network mocking | expanded | playwright-python GitHub |
+| `modern:service-level-expectations` | pytest-httpserver in-process HTTP server per test | expanded | pytest-httpserver readthedocs |
+
+**Verification:** `modernize` → 11 records; `validate-knowledge` →
+`modernization.jsonl: 11/11 valid`; `test_modernize.py` 7/7; ruff + mypy clean.
+
+**Commit:** M8d modernization (service & browser testing: Playwright, pytest-httpserver).
+
 

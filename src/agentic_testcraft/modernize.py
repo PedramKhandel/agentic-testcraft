@@ -477,13 +477,111 @@ _M8B: list[_ModItem] = [
     ),
 ]
 
+# --------------------------------------------------------------------------- #
+# M8d — Service & browser testing (Playwright, pytest-httpserver)               #
+# --------------------------------------------------------------------------- #
+
+_M8D: list[_ModItem] = [
+    _ModItem(
+        _rec(
+            id="modern:browser-ui-assertions",
+            topic="Code-first browser automation with auto-waiting",
+            book_position=(
+                "UI automation is addressed only by Recorded Test — record/"
+                "playback of interactions with the application, which is brittle "
+                "and offers no robust synchronization or cross-browser story."
+            ),
+            modern_position=(
+                "Playwright is 'a Python library to automate Chromium, Firefox and "
+                "WebKit browsers with a single API... ever-green, capable, "
+                "reliant and fast.' It provides auto-waiting, network "
+                "interception/mocking, a unified selector model, and both "
+                "`sync_api` and `async_api` entry points (docs at "
+                "playwright.dev/python)."
+            ),
+            status="expanded",
+            rationale=(
+                "2007 predates modern browser automation; the book's only UI path "
+                "is Recorded Test. Auto-waiting and per-test browser isolation "
+                "eliminate the timing fragility and shared-state coupling that "
+                "make UI tests erratic/fragile."
+            ),
+            sources=["https://github.com/microsoft/playwright-python"],
+            affected=[
+                "pattern:recorded-test",
+                "smell:fragile-test",
+                "smell:erratic-test",
+                "principle:use-the-front-door-first",
+                "principle:isolate-the-sut",
+                "goal:simple-tests",
+                "goal:bug-repellent",
+                "goal:robust-test",
+            ],
+            rule_change=(
+                "Prefer code-first Page-Object browser tests with Playwright "
+                "(auto-waiting, one browser per test, network mocking) over "
+                "Recorded Tests; isolate browser state per test."
+            ),
+        ),
+        "Service & browser testing",
+    ),
+    _ModItem(
+        _rec(
+            id="modern:service-level-expectations",
+            topic="In-process HTTP server for service-level expectations",
+            book_position=(
+                "Tests of HTTP clients/servers rely on a real external service, "
+                "or on Back-Door Manipulation of a shared fixture; there is no "
+                "in-process, programmatically-configured HTTP server per test."
+            ),
+            modern_position=(
+                "pytest-httpserver 'allows you to start a real HTTP server for "
+                "your tests. The server can be configured programmatically to "
+                "how to respond to requests.' ... 'As the HTTP server is spawned "
+                "in a different thread and listening on a TCP port, you can use "
+                "any HTTP client.' Each test configures only the request paths it "
+                "expects (expect_request/respond_with_*) and asserts the client's "
+                "outbound request as part of verification; the server starts/stops "
+                "per test, so no shared external service is required."
+            ),
+            status="expanded",
+            rationale=(
+                "2007 had no in-process HTTP server fixture; tests either "
+                "depended on a shared live service (fragile/rerun-wars) or on "
+                "back-door state checks. An isolated server per test makes "
+                "service-level expectations hermetic and repeatable."
+            ),
+            sources=[
+                "https://pytest-httpserver.readthedocs.io/en/latest/",
+            ],
+            affected=[
+                "pattern:layer-test",
+                "pattern:back-door-manipulation",
+                "pattern:stored-procedure-test",
+                "smell:fragile-test",
+                "principle:use-the-front-door-first",
+                "goal:tests-as-safety-net",
+                "goal:repeatable-test",
+            ],
+            rule_change=(
+                "For HTTP clients/servers, test against an in-process "
+                "pytest-httpserver fixture that asserts expected requests and "
+                "returns scripted responses; never depend on a shared running "
+                "service for the contract."
+            ),
+        ),
+        "Service & browser testing",
+    ),
+]
+
 MODERN_RECORDS: list[dict[str, Any]] = [item.record for item in _M8A] + [
     item.record for item in _M8B
-] + [item.record for item in _M8C]
+] + [item.record for item in _M8C] + [item.record for item in _M8D]
 _MODERN_CATEGORIES: dict[str, str] = {
     **{item.record["id"]: item.category for item in _M8A},
     **{item.record["id"]: item.category for item in _M8B},
     **{item.record["id"]: item.category for item in _M8C},
+    **{item.record["id"]: item.category for item in _M8D},
 }
 
 
