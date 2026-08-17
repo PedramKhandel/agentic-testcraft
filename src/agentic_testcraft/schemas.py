@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 from typing import Any, Literal, get_args
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from rich.console import Console
 
 from .provenance import (
@@ -191,6 +191,23 @@ class ModernizationRecord(BaseModel):
     agent_rule_change: str | None = None
     review_date: str
     modern_origin: str = "modern_official"
+
+    @field_validator("official_sources")
+    @classmethod
+    def _sources_are_absolute_urls(cls, v: list[str]) -> list[str]:
+        for u in v:
+            if not isinstance(u, str) or not u.startswith(("http://", "https://")):
+                raise ValueError(f"official_sources must be absolute URLs: {u!r}")
+        return v
+
+    @field_validator("review_date")
+    @classmethod
+    def _date_format(cls, v: str) -> str:
+        import re as _re
+
+        if not _re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", v):
+            raise ValueError("review_date must be YYYY-MM-DD")
+        return v
 
 
 # --------------------------------------------------------------------------- #

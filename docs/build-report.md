@@ -410,4 +410,38 @@ validator now protects generated-knowledge concision + source immutability
 rather than "source files are not tracked". Decision record:
 `docs/decisions/source-publication.md`.
 
+---
+
+## M8a — Modernization: runtime & determinism
+
+Implemented `modernize.py` (`run_modernization`, wired in `cli.py`) with the
+`ModernizationRecord` model + field validators (authoritative URL citations,
+`YYYY-MM-DD` review date) so `validate-knowledge` enforces them.
+
+**M8a records (3), all sourced to primary/official docs fetched live:**
+
+| id | topic | status | source |
+|---|-------|--------|--------|
+| `modern:async-test-support` | Async/await test execution | expanded | pytest-asyncio docs |
+| `modern:deterministic-time` | Deterministic / virtual clocks | clarified | time-machine docs |
+| `modern:flaky-as-fatal` | Flaky tests are fatal, not retried | expanded | Hypothesis flaky-docs |
+
+Each record states the 2007 book position vs. the modern position, is grounded
+in `affected_knowledge_ids`, and gives an `agent_rule_change`. Records write to
+`knowledge/modern/{modernization.jsonl, current-testing-practices.md}` (both
+gitignored, regenerable).
+
+**Verification:**
+```
+agentic-testcraft modernize -> modernized 3 records
+agentic-testcraft validate-knowledge
+    knowledge/modern/modernization.jsonl: 3/3 records valid
+    all knowledge artifacts valid
+```
+
+**Quality gates:** ruff clean, mypy clean (`modernize`, `schemas`);
+**7 tests pass** (`tests/unit/test_modernize.py`).
+
+**Commit:** M8a modernization (run-time & determinism).
+
 
