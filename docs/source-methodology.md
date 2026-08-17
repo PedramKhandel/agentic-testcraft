@@ -1,17 +1,21 @@
 # Source-handling methodology
 
 This document describes how the copyrighted source book
-(*xUnit Test Patterns*, Gerard Meszaros, 2007) is handled locally and turned
-into provenance-linked, paraphrased knowledge. **No part of the book is
-redistributed by this repository.**
+(*xUnit Test Patterns*, Gerard Meszaros, 2007) is handled as an immutable
+input and turned into provenance-linked, paraphrased knowledge. The source
+files are tracked in version control by explicit owner authorization (see
+`docs/decisions/source-publication.md`); they are treated as immutable and
+are never modified in place.
 
 ## Immutable inputs
 
 The PDF and the converted Markdown live at the repository root. They are
-treated as **immutable inputs**:
+tracked in version control by explicit owner authorization and are treated as
+**immutable inputs**:
 
 - their SHA-256 hashes are recorded in `.local/work/source-report.json`;
-- they are listed in `.gitignore` and are never committed;
+- they are tracked as immutable reference inputs (owner-authorized; see
+  `docs/decisions/source-publication.md`);
 - the cleaner writes a *new* `book.cleaned.md`; it never overwrites the source.
 
 ## Discovery
@@ -96,5 +100,9 @@ mappable).
 
 ## Source-leak prevention (Stage 19)
 
-A validator checks that no tracked file reproduces long runs from the
-gitignored source and that the source files themselves are not tracked.
+A validator checks that no tracked *generated knowledge* file reproduces long
+verbatim runs from the source book (the source files themselves are authorized
+tracked inputs and must remain unmodified in place). It also detects watermark
+strings and accidental copies of local chunk files into tracked directories.
+This is a safety mechanism over generated knowledge, not a legal determination.
+Run it before release commits.

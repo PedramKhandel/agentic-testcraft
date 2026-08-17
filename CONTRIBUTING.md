@@ -22,8 +22,9 @@ uv run pytest
 
 ## What does NOT belong here
 
-- The copyrighted book PDF or full converted Markdown. These are gitignored
-  and must never be committed.
+- The copyrighted book PDF and Markdown are tracked only as immutable,
+  owner-authorized reference inputs; do not modify them or reconstruct the
+  book from chunks.
 - Long verbatim quotes from the book.
 - API keys or other secrets.
 

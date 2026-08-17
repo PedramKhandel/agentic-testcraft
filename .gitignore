@@ -1,9 +1,9 @@
-# Copyrighted source materials (not redistributed by this repository)
-# The PDF and converted Markdown of "xUnit Test Patterns" are processed
-# locally but intentionally excluded from version control.
-/xUnit Test Patterns_ Refactoring Test Code - by Gerard Meszaros - 2007.pdf
-/xUnit Test Patterns_ Refactoring Test Code - by Gerard Meszaros - 2007.md
-
+# Copyrighted source materials
+# The PDF and Markdown of "xUnit Test Patterns" by Gerard Meszaros (2007) are
+# tracked in version control as immutable reference inputs by explicit owner
+# authorization (see docs/decisions/source-publication.md). They are NOT
+# modified in place: the cleaner writes a separate book.cleaned.md.
+#
 # Local working artifacts (processing, renders, extraction cache)
 .local/
 .pytest_cache/

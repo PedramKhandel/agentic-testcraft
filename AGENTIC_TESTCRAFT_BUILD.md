@@ -103,17 +103,29 @@ Before processing them:
 
 ## 1.2 Public-repository safety
 
-The source book is copyrighted. Unless the repository owner has explicitly documented redistribution rights:
+The source book is copyrighted. **Default (safe) behavior:** unless the
+repository owner has explicitly documented redistribution rights, do not commit
+the source book:
 
-- **do not commit the full PDF;**
-- **do not commit the full converted Markdown;**
+- do not commit the full PDF;
+- do not commit the full converted Markdown;
 - do not commit long verbatim extracts from the book;
 - do not reconstruct the book in the repository through chunk files;
-- do not put substantial source passages in fixtures, logs, prompts, snapshots, or generated artifacts.
+- do not put substantial source passages in fixtures, logs, prompts, snapshots,
+  or generated artifacts.
 
-The source files may exist locally in the working tree so the agent can process them, but they should be ignored by Git by default.
+By default the source files may exist locally in the working tree so the agent
+can process them, and should be ignored by Git (add discovered source
+filenames to `.gitignore` without deleting them).
 
-Add the discovered source filenames to `.gitignore` without deleting them.
+**Repository-specific override (this repository):** the repository owner has
+explicitly confirmed they have permission to publish and keep the supplied PDF
+and Markdown editions **in this Git repository**, and that doing so is
+intentional and authorized (`docs/decisions/source-publication.md`). In this
+repository the source files ARE tracked as **immutable inputs** (never modified
+in place). All other safety rules above — especially "do not commit long
+verbatim extracts" and "do not reconstruct the book through chunk files" —
+remain in force for generated knowledge.
 
 Committed knowledge artifacts should be:
 
@@ -2477,19 +2489,23 @@ Use small synthetic fixtures instead of copyrighted source excerpts whenever pos
 
 # 19. Source-leak prevention
 
-Add a validator that helps prevent accidental publication of the book.
+Add a validator that helps prevent accidental publication of the book's prose.
+The source files are authorized-tracked immutable inputs in this repository
+(see `docs/decisions/source-publication.md`); the validator's job is to keep
+**generated knowledge** clean and short, and to keep the source files from
+being altered in place.
 
 At minimum it should:
 
-- verify ignored source filenames are not tracked;
-- flag unusually long passages in generated knowledge;
+- flag unusually long verbatim passages from the book in generated knowledge;
+- verify source files remain unmodified (hash drift check);
 - detect accidental copies of local chunk files into tracked directories;
 - detect known watermark strings;
-- optionally compare long n-grams between tracked Markdown and local source and flag suspicious overlap.
+- optionally compare long n-grams between tracked generated Markdown and the
+  source and flag suspicious overlap.
 
-This validator is a safety mechanism, not a legal determination.
-
-Run it before release commits.
+This validator is a safety mechanism, not a legal determination. Run it before
+release commits.
 
 ---
 

@@ -7,11 +7,19 @@ Copyright (c) Agentic Testcraft contributors.
 The pipeline in this repository was authored against
 *xUnit Test Patterns: Refactoring Test Code* by Gerard Meszaros (2007),
 published by Addison-Wesley. The original PDF and a converted Markdown
-edition are used locally as **immutable reference inputs only**.
+edition are used as **immutable reference inputs** for transformation.
 
-This repository **does not redistribute** the book. The PDF and Markdown source
-files are intentionally excluded from version control (see `.gitignore`) and
-are expected to be supplied by the operator under their own lawful access.
+The repository owner has explicitly confirmed that they have permission to
+publish and keep the supplied PDF and Markdown editions **in this Git
+repository**, and that their presence here is intentional and authorized
+(see `docs/decisions/source-publication.md`). The source files are tracked
+in version control as immutable inputs — they are never modified; the
+cleaner writes a separate, provenance-linked `book.cleaned.md`.
+
+Repository knowledge artifacts (cleaned text, structured JSONL, decision
+rules, the final Agent Skill) are **transformed knowledge tooling**, not
+substitutes for the book. They paraphrase and encode the source while
+preserving provenance pointers to it.
 
 ## Rights
 

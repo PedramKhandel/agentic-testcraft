@@ -54,9 +54,10 @@ line) so output is always traceable to its origin line in `book.cleaned.md`.
    re-checked by `validate-knowledge`; invalid records cannot be written.
 4. **Provenance everywhere.** Every artifact is traceable to original Markdown
    lines via `line-map.jsonl` and `source_refs`.
-5. **Gitignore the inputs and generated knowledge files.** `book.*.md`/`.pdf`,
-   `.local/`, `knowledge/` are never committed; only source and `.schema.json`
-   definitions live in the repo.
+5. **Generated intermediates are gitignored.** `.local/`, `knowledge/`, and
+   the derived `book.cleaned.md` are never committed (all regenerable from the
+   tracked source). The source book files and `.schema.json` definitions are
+   tracked (the book as immutable, owner-authorized inputs).
 
 ## Why a graph
 
