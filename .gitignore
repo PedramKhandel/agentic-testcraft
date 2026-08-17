@@ -24,6 +24,7 @@ venv/
 
 # Tooling generated outputs that are rebuilt deterministically
 knowledge/book/*.jsonl
+knowledge/book/*.json
 knowledge/book/*__extract.json
 knowledge/graph/*.jsonl
 knowledge/graph/graph.json

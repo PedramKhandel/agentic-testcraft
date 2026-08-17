@@ -48,11 +48,12 @@ Records are grouped by *category* for the digest:
 
 | Category | M8 records |
 |---|---|
-| Runtime and determinism | async/await, deterministic time, flaky-as-fatal |
-| Modern integration | disposable containers, hermetic fixtures |
-| Test-effectiveness methods | mutation testing, property-based testing, contract testing, fuzz testing |
-| Service & browser testing | Playwright UI, pytest-httpserver |
-| CI and execution | parallel execution (`-n auto`), monorepo suite partitioning (`--splits/--group`) |
+| Runtime and determinism | async/await test execution (pytest-asyncio / IsolatedAsyncioTestCase), deterministic time (time-machine), flaky tests treated as fatal (Hypothesis), random test ordering & per-test seeds (pytest-randomly) |
+| Modern integration | disposable integration dependencies (Testcontainers), hermetic function-scoped fixtures |
+| Test-effectiveness methods | mutation testing (mutmut), property-based testing (Hypothesis), consumer-driven contract testing (Pact), coverage-guided fuzz testing (atheris) |
+| Snapshot & boundary testing | snapshot/golden-master assertions (syrupy), hermetic HTTP service boundary testing (httpx MockTransport) |
+| Service & browser testing | code-first browser automation (Playwright), in-process HTTP server (pytest-httpserver) |
+| CI and execution | parallel execution (`-n auto`, pytest-xdist), monorepo suite partitioning (`pytest-split`), cross-version/cross-platform matrix (tox + GitHub Actions) |
 
 ## Book-vs-modern boundary
 

@@ -102,6 +102,75 @@ def test_validate_knowledge_passes_on_real_artifacts():
     run_validate_knowledge()
 
 
+def test_validate_knowledge_flags_unresolved_reference(monkeypatch, tmp_path: Path):
+    # §5 gate: "no unresolved unknown record references". A decision rule that
+    # cites an evidence id absent from all declared knowledge ids must fail.
+    import agentic_testcraft.config as cfg
+
+    work = tmp_path / "work"
+    work.mkdir()
+    (work / "chunk-manifest.jsonl").write_text("", encoding="utf-8")
+    book = tmp_path / "book"
+    book.mkdir()
+    synth = tmp_path / "synth"
+    synth.mkdir()
+    rule = {
+        "id": "rule:orphan",
+        "trigger": "t",
+        "default_action": "a",
+        "applicability": "",
+        "origin": "book",
+        "strength": "default",
+        "evidence_ids": ["pattern:does-not-exist"],
+    }
+    (synth / "decision-rules.jsonl").write_text(json.dumps(rule) + "\n", encoding="utf-8")
+    monkeypatch.setattr(cfg.DEFAULT_PATHS, "work_dir", work)
+    monkeypatch.setattr(cfg.DEFAULT_PATHS, "repo_root", tmp_path)
+    monkeypatch.setattr(cfg.DEFAULT_PATHS, "knowledge_book_dir", book)
+    monkeypatch.setattr(cfg.DEFAULT_PATHS, "knowledge_graph_dir", tmp_path / "graph")
+    monkeypatch.setattr(cfg.DEFAULT_PATHS, "knowledge_modern_dir", tmp_path / "modern")
+    monkeypatch.setattr(cfg.DEFAULT_PATHS, "knowledge_synthesized_dir", synth)
+    with pytest.raises(SystemExit):
+        run_validate_knowledge()
+
+
+def test_validate_knowledge_passes_on_clean_refs(monkeypatch, tmp_path: Path):
+    # A rule whose evidence id IS declared elsewhere must resolve cleanly.
+    import agentic_testcraft.config as cfg
+
+    work = tmp_path / "work"
+    work.mkdir()
+    (work / "chunk-manifest.jsonl").write_text("", encoding="utf-8")
+    book = tmp_path / "book"
+    book.mkdir()
+    synth = tmp_path / "synth"
+    synth.mkdir()
+    pattern = {
+        "id": "pattern:real",
+        "name": "Real Pattern",
+        "origin": "book",
+        "problem": "How do we solve X?",
+        "solution": "We do Y.",
+        "source_refs": [{"source_id": "book", "file_sha256": FILE_SHA,
+                         "markdown_start_line": 1, "markdown_end_line": 2}],
+    }
+    rule = {
+        "id": "rule:linked",
+        "trigger": "t", "default_action": "a", "applicability": "",
+        "origin": "book", "strength": "default",
+        "evidence_ids": ["pattern:real"],
+    }
+    (book / "patterns.jsonl").write_text(json.dumps(pattern) + "\n", encoding="utf-8")
+    (synth / "decision-rules.jsonl").write_text(json.dumps(rule) + "\n", encoding="utf-8")
+    monkeypatch.setattr(cfg.DEFAULT_PATHS, "work_dir", work)
+    monkeypatch.setattr(cfg.DEFAULT_PATHS, "repo_root", tmp_path)
+    monkeypatch.setattr(cfg.DEFAULT_PATHS, "knowledge_book_dir", book)
+    monkeypatch.setattr(cfg.DEFAULT_PATHS, "knowledge_graph_dir", tmp_path / "graph")
+    monkeypatch.setattr(cfg.DEFAULT_PATHS, "knowledge_modern_dir", tmp_path / "modern")
+    monkeypatch.setattr(cfg.DEFAULT_PATHS, "knowledge_synthesized_dir", synth)
+    run_validate_knowledge()  # should not raise
+
+
 def test_validate_knowledge_fails_on_corrupt_manifest(monkeypatch, tmp_path: Path):
     work = tmp_path / "work"
     work.mkdir()

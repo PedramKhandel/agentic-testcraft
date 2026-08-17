@@ -75,6 +75,18 @@ class GoalRecord(IdentifiedRecord):
     confidence: Confidence = "default"
 
 
+class NarrativeRecord(IdentifiedRecord):
+    """Source-faithful narrative guidance that is not a discrete pattern/smell/
+    principle (e.g. the book's *My Philosophy*, *Pattern Form*, or cross-cutting
+    decision advice). Emitted as ``knowledge/book/narrative-rules.jsonl`` by Stage 5.
+    """
+
+    statement: str
+    rationale: str = ""
+    evidence_ids: list[str] = Field(default_factory=list)
+    agent_decision_rule: str | None = None
+
+
 class PrincipleRecord(IdentifiedRecord):
     statement: str
     rationale: str = ""
@@ -268,6 +280,7 @@ _KNOWLEDGE_MODELS: dict[str, type[BaseModel]] = {
     "pattern:": PatternRecord,
     "smell:": SmellRecord,
     "goal:": GoalRecord,
+    "narrative:": NarrativeRecord,
     "principle:": PrincipleRecord,
     "relationship:": RelationshipRecord,
     "rule:": DecisionRuleRecord,
@@ -346,6 +359,15 @@ def run_validate_knowledge() -> None:
         p.knowledge_modern_dir,
         p.knowledge_synthesized_dir,
     ]
+    # Collect every declared knowledge id for the §5 "no unresolved unknown
+    # record references" resolution pass.
+    reference_fields = {
+        "evidence_ids", "affected_knowledge_ids", "related_patterns",
+        "prevents_smells", "may_cause_smells", "related_smells",
+        "recommended_patterns", "related_principles",
+    }
+    known_ids: set[str] = set()
+    pending_refs: list[tuple[str, str, str, list[str]]] = []
     for kd in knowledge_dirs:
         for jf in sorted(kd.glob("*.jsonl")):
             recs = read_jsonl(jf)
@@ -360,7 +382,37 @@ def run_validate_knowledge() -> None:
                     ok += 1
                 except Exception as exc:  # noqa: BLE001
                     errors.append(f"{jf.name}[{i}] (id={r.get('id', r.get('from_id', '?'))}): {exc}")
+                    continue
+                # record its id (or edge endpoints) for reference resolution
+                rid = r.get("id") or r.get("from_id")
+                if rid:
+                    known_ids.add(rid)
+                for field, vals in r.items():
+                    if field in reference_fields and isinstance(vals, list):
+                        pending_refs.append((jf.name, str(rid), field, vals))
             console.print(f"[bold]{jf.relative_to(p.repo_root)}[/bold]: {ok}/{len(recs)} records valid")
+
+    # 4) cross-record reference resolution (§5 acceptance gate).
+    unresolved: list[str] = []
+    seen_missing: set[tuple[str, str, str]] = set()
+    for fname, owner, field, vals in pending_refs:
+        for ref in vals:
+            if not isinstance(ref, str):
+                continue
+            if ref not in known_ids:
+                key = (owner, field, ref)
+                if key in seen_missing:
+                    continue
+                seen_missing.add(key)
+                unresolved.append(f"{fname} {owner}.{field} -> {ref!r} (unresolved id)")
+    if unresolved:
+        for u in unresolved[:25]:
+            errors.append(u)
+        if len(unresolved) > 25:
+            errors.append(f"  ... and {len(unresolved) - 25} more unresolved references")
+        console.print(f"[yellow]reference resolution: {len(unresolved)} unresolved[/yellow]")
+    else:
+        console.print("[bold]reference resolution:[/bold] all cross-record refs resolve")
 
     if errors:
         console.print(f"[red]{len(errors)} validation error(s):[/red]")
@@ -380,6 +432,7 @@ __all__ = [
     "KnowledgeRecord",
     "ModernizationRecord",
     "ModernizationStatus",
+    "NarrativeRecord",
     "PatternRecord",
     "PrincipleRecord",
     "RelationshipRecord",

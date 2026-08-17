@@ -525,30 +525,45 @@ new `_M8E` list, each citing an absolute `https://` source with a
 
 ---
 
-## M8 — Summary (a–e)
+## M8 — Summary (a–f)
 
-**Records:** 13 `modern:*` records across 5 categories
+**Records:** 17 `modern:*` records across 6 categories
 (Runtime & determinism, Modern integration, Test-effectiveness methods,
-Service & browser testing, CI and execution). Each cites an authoritative
-`https://` source with a `2026-08-17` review date and links to real book
-`id`s, and carries an `agent_rule_change` the future skill can adopt verbatim.
+Snapshot & boundary testing, Service & browser testing, CI and execution). Each
+cites an authoritative `https://` source with a `2026-08-17` review date and
+links to real book `id`s, and carries an `agent_rule_change` the future skill
+can adopt verbatim.
+
+**Addendum (M8f research):** four practice topics with no existing record were
+researched against official sources and added: randomized test ordering
+(`pytest-randomly`), snapshot/golden-master assertions (`syrupy`), hermetic HTTP
+service boundaries (`httpx MockTransport`), and cross-version/cross-platform
+matrix gating (`tox` + GitHub Actions `setup-python`). Their `affected`
+knowledge `id`s are validated to resolve. Two topics were reviewed and
+intentionally excluded (flaky-test retries — rejected by `modern:flaky-as-fatal`;
+eventual-consistency polling — a behavioral pattern, covered by
+`modern:browser-ui-assertions` auto-waiting) and three more folded into existing
+records. See `docs/decisions/modernization-topic-coverage.md`.
 
 **Closing artifacts:**
 - `docs/modernization-methodology.md` — M8 discipline, validation pipeline,
-  book-vs-modern boundary.
+  book-vs-modern boundary, updated category table.
 - `docs/decisions/skill-compatibility.md` — cross-check of every M8 record
   against skill-spec R1–R8 and acceptance criterion 6.13 (evidence mapping).
   R7 (Effectiveness validation) is the strongest win (mutation/property/contract/
   fuzz); no conflicts found; gaps flagged for M8f+/M9.
+- `docs/decisions/modernization-topic-coverage.md` — M8f topic audit with
+  add/review-exclude/fold/exclude rationale.
 
 **Full audit (M8f):** all knowledge artifacts valid (119 chunks, 660 graph
-edges, 13 modern, 93 rules, 91 book records); all 84 tests pass; `modernize.py`
-+ `test_modernize.py` clean under ruff + mypy. Pre-existing lint/mypy findings
+edges, 17 modern, 93 rules, 91 book records + 4 narrative rules); all
+cross-record references resolve; 108 tests pass; `modernize.py` +
+`test_modernize.py` clean under ruff + mypy. Pre-existing lint/mypy findings
 in untouched modules (`clean.py`, `provenance.py`, `source_inspect.py`,
 `cli.py`, `test_clean.py`, `test_provenance.py`) are out of scope for this
 milestone.
 
-**Commit:** M8 closing docs (modernization-methodology.md, decisions/skill-compatibility.md).
+**Commit:** M8 closing docs (modernization-methodology.md, decisions/skill-compatibility.md, decisions/modernization-topic-coverage.md).
 
 ---
 

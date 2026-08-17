@@ -24,9 +24,17 @@ from pydantic import BaseModel
 from rich.console import Console
 
 from .config import load_settings
-from .provenance import SourceRef, read_jsonl
+from .provenance import (
+    SourceRef,
+    now_iso,
+    read_jsonl,
+    sha256_file,
+    write_jsonl,
+)
 from .schemas import (
+    Confidence,
     GoalRecord,
+    NarrativeRecord,
     PatternRecord,
     PrincipleRecord,
     SmellRecord,
@@ -65,6 +73,86 @@ _HEAD_IMPACT = {"impact"}
 _HEAD_CAUSES = {"causes"}
 _HEAD_ALIASES = {"also known as", "also known as:", "aka"}
 _HEAD_RATIONALE = {"why we do this"}
+_HEAD_REFACTORING = {"refactoring notes"}
+_HEAD_KNOWN_USES = {"known uses"}
+_HEAD_FURTHER_READING = {"further reading"}
+
+# Chapters / pattern-family entries the standard form lists as historical tooling
+# (Appendix C xUnit-family, "Historical Patterns and Smells" appendix, etc.).
+_HISTORICAL_CHAPTER_HINTS = ("historical", "appendix", "xunit family")
+
+# Source-faithful narrative guidance that is not a discrete pattern/smell/principle.
+# ``source_refs`` and ``confidence`` are attached at emission time in
+# ``run_extraction`` (they depend on the cleaned-book SHA-256 and chapter spans).
+_NARRATIVE_RULES: list[dict[str, Any]] = [
+    {
+        "id": "narrative:tests-as-specification-first",
+        "name": "Tests as specification-first",
+        "statement": (
+            "Automated tests double as executable specification. When the team "
+            "writes tests before or alongside the production code, the tests "
+            "capture the desired behaviour and serve as the source of truth for "
+            "what 'done' means."
+        ),
+        "rationale": (
+            "From Chapter 3 Goals of Test Automation: 'Tests as Specification' — "
+            "the tests give us a way to capture what the SUT should be doing."
+        ),
+        "evidence_ids": ["goal:tests-as-specification"],
+    },
+    {
+        "id": "narrative:minimal-fault-domain",
+        "name": "Prefer a minimal, single-condition fault domain",
+        "statement": (
+            "Keep each test method small enough that a failure points at one "
+            "behavioural condition; do not equate this with a single assertion."
+        ),
+        "rationale": (
+            "Goal: Simple Tests states 'strive to Verify One Condition per Test by "
+            "creating a separate Test Method for each unique combination of "
+            "pre-test state and input'; the book explicitly notes this does not "
+            "mean 'one assertion per test'."
+        ),
+        "evidence_ids": [
+            "goal:simple-tests",
+            "principle:verify-one-condition-per-test",
+        ],
+    },
+    {
+        "id": "narrative:testability-is-design-leverage",
+        "name": "Testability is design leverage, not test glue",
+        "statement": (
+            "Design for testability by substituting dependencies at the system "
+            "boundaries (front door, back door, test doubles); keep test wiring "
+            "out of production code."
+        ),
+        "rationale": (
+            "Principle: Design for Testability / Use the Front Door First and "
+            "Keep Test Logic Out of Production Code; Chapter 4 philosophy notes "
+            "substitutable dependency is designed in from the start."
+        ),
+        "evidence_ids": [
+            "principle:design-for-testability",
+            "principle:use-the-front-door-first",
+            "principle:keep-test-logic-out-of-production-code",
+        ],
+    },
+    {
+        "id": "narrative:flakiness-is-a-failure-mode",
+        "name": "Nondeterminism is a test bug",
+        "statement": (
+            "A test that can pass or fail without a code change is a defect in "
+            "the test. Eliminate dependence on wall-clock time, shared state, and "
+            "environment ordering before treating a green run as success."
+        ),
+        "rationale": (
+            "Goal: Repeatable Test and smell:erratic-test define repeatability as "
+            "a first-class test-quality criterion; the book warns the red-bar "
+            "loses meaning once failures are tolerated."
+        ),
+        "evidence_ids": ["goal:repeatable-test", "smell:erratic-test"],
+    },
+]
 
 _BOLD_RX = re.compile(r"^\*\*(.+)\*\*\s*$")
 _ITALIC_RX = re.compile(r"^_(.*)_$")
@@ -229,6 +317,54 @@ class NativeAgentExtractor:
         return records, errors
 
 
+def _has_subsection(segs: list[tuple[str | None, list[str]]], headings: set[str]) -> bool:
+    return bool(_first_body(segs, headings))
+
+
+def _has_variation(segs: list[tuple[str | None, list[str]]]) -> bool:
+    body = _first_body(segs, _HEAD_IMPL)
+    return any(ln.strip().lower().startswith("variation") for ln in body)
+
+
+def _chapter_is_historical(chunk: dict[str, Any]) -> bool:
+    ch = (chunk.get("chapter_title") or "").lower()
+    title = (chunk.get("title") or "").lower()
+    return any(h in ch for h in _HISTORICAL_CHAPTER_HINTS) or any(
+        h in title for h in _HISTORICAL_CHAPTER_HINTS
+    )
+
+
+def _classify_confidence(
+    chunk: dict[str, Any],
+    segs: list[tuple[str | None, list[str]]],
+    model_cls: type,
+) -> Confidence:
+    """Deterministic, structure-based confidence for a book record.
+
+    Grounded in the book's *Pattern Form* (book line ~942): a pattern is
+    ``certain`` when it has an explicit Problem/Solution/When-to-use structure;
+    ``context_dependent`` when its Implementation Notes enumerate named
+    variations (the book treats variants as a single pattern → choice is
+    context-dependent); ``historical`` for appendix/xUnit-family tooling;
+    ``warning`` when the primary extraction had to fall back to prose because a
+    canonical section is absent; ``default`` otherwise.
+    """
+    if _chapter_is_historical(chunk):
+        return "historical"
+    if model_cls is PatternRecord:
+        has_solution = bool(_body_text(_first_body(segs, _HEAD_SOLUTION)))
+        if has_solution:
+            if _has_variation(segs):
+                return "context_dependent"
+            return "certain"
+        return "warning"
+    if model_cls is SmellRecord:
+        return "certain" if _has_subsection(segs, _HEAD_CAUSES) else "default"
+    if model_cls is PrincipleRecord:
+        return "certain" if _has_subsection(segs, _HEAD_RATIONALE) else "default"
+    return "default"
+
+
 def _build_record(
     chunk: dict[str, Any], model_cls: type, segs: list[tuple[str | None, list[str]]]
 ) -> dict[str, Any] | None:
@@ -238,7 +374,7 @@ def _build_record(
         "id": _remap_smell_id(chunk["id"]),
         "name": name,
         "origin": "book",
-        "confidence": "default",
+        "confidence": _classify_confidence(chunk, segs, model_cls),
         "source_refs": [r.to_dict() for r in _source_refs_from(chunk)],
         "aliases": _aliases(intro, segs),
     }
@@ -252,9 +388,10 @@ def _build_record(
                 solution=_body_text(_first_body(segs, _HEAD_SOLUTION)) or _essence(intro, name) or _first_sentence(_clean_text(intro)) or name,
                 context=_body_text(_first_body(segs, _HEAD_CONTEXT)) or None,
                 forces=_bullets(_first_body(segs, _HEAD_FORCES)),
-                use_when=_body_text(_first_body(segs, _HEAD_WHEN)) or None,
-                implementation_variations=_bullets(_first_body(segs, _HEAD_IMPL)),
-            )
+                 use_when=_body_text(_first_body(segs, _HEAD_WHEN)) or None,
+                 implementation_variations=_bullets(_first_body(segs, _HEAD_IMPL)),
+                 refactorings=_bullets(_first_body(segs, _HEAD_REFACTORING)),
+             )
         elif model_cls is SmellRecord:
             rec = SmellRecord(
                 **common,
@@ -388,11 +525,172 @@ def _group_by_stem(records: list[dict[str, Any]]) -> dict[str, list[dict[str, An
     return grouped
 
 
+_CHAPTER_RX = re.compile(r"chapter\s+\d", re.IGNORECASE)
+
+
+def _chapter_span(
+    book_lines: list[str], *fragments: str
+) -> tuple[int, int] | None:
+    """1-based inclusive (start, end) line span of the book section named by any fragment.
+
+    ``end`` is the line before the next chapter header (or EOF). Bounded so the
+    span stays inside the chapter that justifies the claim.
+    """
+    start: int | None = None
+    for i, ln in enumerate(book_lines, start=1):
+        if any(f.lower() in ln.lower() for f in fragments):
+            start = i
+            break
+    if start is None:
+        return None
+    end = len(book_lines)
+    for j in range(start + 1, len(book_lines) + 1):
+        ln = book_lines[j - 1]
+        if _CHAPTER_RX.search(ln) and not any(
+            f.lower() in ln.lower() for f in fragments
+        ):
+            end = j - 1
+            break
+    return start, end
+
+
+# Optional richer fields the schemas define for each knowledge type. These are
+# populated only when the book's structure supplies them; the coverage report
+# documents which remain null because the source does not define that subsection.
+_RICH_FIELDS: dict[str, list[str]] = {
+    "pattern": [
+        "intent", "context", "forces", "use_when", "avoid_when", "benefits", "costs",
+        "risks", "implementation_variations", "refactorings", "related_patterns",
+        "prevents_smells", "may_cause_smells", "agent_decision_rule", "agent_actions",
+        "common_misinterpretations", "historical_or_framework_specific_notes",
+    ],
+    "smell": [
+        "symptoms", "impact", "causes", "detection_heuristics", "false_positive_risks",
+        "related_smells", "recommended_patterns", "agent_review_checks",
+    ],
+    "goal": ["why_it_matters", "indicators", "tensions", "related_principles"],
+    "principle": [
+        "rationale", "default_rule", "exceptions", "tradeoffs", "failure_modes_if_ignored",
+        "related_patterns", "related_smells", "agent_checks",
+    ],
+    "narrative": ["rationale", "evidence_ids", "agent_decision_rule"],
+}
+
+# Maps a narrative evidence id to the book section that justifies it, so each
+# narrative rule carries a real source span instead of a loose pointer.
+_NARRATIVE_ANCHORS: dict[str, tuple[str, ...]] = {
+    "goal:tests-as-specification": ("Goals of Test Automation",),
+    "principle:verify-one-condition-per-test": ("Goals of Test Automation",),
+    "principle:design-for-testability": ("Philosophy of Test Automation",),
+    "principle:use-the-front-door-first": ("Principles of Test Automation",),
+    "principle:keep-test-logic-out-of-production-code": ("Principles of Test Automation",),
+    "goal:repeatable-test": ("Goals of Test Automation",),
+    "smell:erratic-test": ("Project Smells", "Code Smells"),
+}
+
+
+def _narrative_source_refs(
+    book_sha: str, book_lines: list[str], evidence_ids: list[str]
+) -> list[SourceRef]:
+    refs: list[SourceRef] = []
+    seen: set[tuple[int, int]] = set()
+    for eid in evidence_ids:
+        frag = _NARRATIVE_ANCHORS.get(eid)
+        span = _chapter_span(book_lines, *frag) if frag else None
+        if span is None:
+            continue
+        start, end = span
+        if (start, end) in seen:
+            continue
+        seen.add((start, end))
+        refs.append(SourceRef(source_id="book", file_sha256=book_sha, markdown_start_line=start, markdown_end_line=end))
+    if not refs:
+        refs.append(SourceRef(source_id="book", file_sha256=book_sha, markdown_start_line=1, markdown_end_line=len(book_lines)))
+    return refs
+
+
+def _write_narrative_rules(
+    out_path: Path, book_sha: str, book_lines: list[str]
+) -> int:
+    """Emit knowledge/book/narrative-rules.jsonl (Stage 5 narrative output)."""
+    out: list[dict[str, Any]] = []
+    for rule in _NARRATIVE_RULES:
+        srefs = _narrative_source_refs(
+            book_sha, book_lines, rule["evidence_ids"]
+        )
+        rec = {
+            "id": rule["id"],
+            "name": rule["name"],
+            "statement": rule["statement"],
+            "rationale": rule["rationale"],
+            "evidence_ids": rule["evidence_ids"],
+            "origin": "book",
+            "confidence": "certain",
+            "source_refs": [s.to_dict() for s in srefs],
+        }
+        NarrativeRecord(**rec)
+        out.append(rec)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    write_jsonl(out_path, out)
+    return len(out)
+
+
+def _build_coverage_report(
+    records: list[dict[str, Any]], provider: str
+) -> dict[str, Any]:
+    """Build the extraction coverage / low-confidence / ambiguous report."""
+    by_type: dict[str, dict[str, Any]] = {}
+    low: list[dict[str, Any]] = []
+    ambiguous: list[dict[str, Any]] = []
+    for rec in records:
+        rid = rec["id"]
+        prefix = rid.split(":", 1)[0]
+        bucket = by_type.setdefault(
+            prefix, {"count": 0, "confidence": {}, "field_coverage": {}}
+        )
+        bucket["count"] += 1
+        conf = rec.get("confidence", "default")
+        bucket["confidence"][conf] = bucket["confidence"].get(conf, 0) + 1
+        for f in _RICH_FIELDS.get(prefix, []):
+            if f in rec and bool(rec[f]):
+                bucket["field_coverage"][f] = (
+                    bucket["field_coverage"].get(f, 0) + 1
+                )
+        if conf in ("warning", "exception", "context_dependent", "historical"):
+            reason = (
+                "primary extraction fell back to prose (no canonical section)"
+                if conf == "warning"
+                else f"confidence={conf}"
+            )
+            low.append({"id": rid, "type": prefix, "confidence": conf, "reason": reason})
+            if conf == "warning":
+                ambiguous.append({"id": rid, "reason": reason})
+    return {
+        "generated_at": now_iso(),
+        "provider": provider,
+        "total_records": len(records),
+        "by_type": by_type,
+        "low_confidence": low,
+        "ambiguous": ambiguous,
+        "note": (
+            "Only schema-required fields and subsections the book's structure "
+            "actually defines are populated here. The 2007 Pattern Form does not "
+            "define named Benefits/Costs/Risks/Exceptions/Related-Pattern "
+            "subsections, so those optional fields are intentionally null; "
+            "cross-reference fields are populated downstream from the Stage-6 "
+            "relationship graph where the source supports them."
+        ),
+    }
+
+
 def run_extraction(provider: str = "native-agent", model: str | None = None) -> None:
     """Stage 5 entry point: extract knowledge from chunks and write JSONL."""
     settings = load_settings()
     p = settings.paths
-    book_lines = (p.work_dir / "book.cleaned.md").read_text(encoding="utf-8").split("\n")
+    p.ensure_knowledge_dirs()
+    book_path = p.work_dir / "book.cleaned.md"
+    book_lines = book_path.read_text(encoding="utf-8").split("\n")
+    book_sha = sha256_file(book_path)
     chunks = read_jsonl(p.work_dir / "chunk-manifest.jsonl")
 
     factory = _PROVIDERS.get(provider)
@@ -412,6 +710,26 @@ def run_extraction(provider: str = "native-agent", model: str | None = None) -> 
         )
         written += len(recs)
         console.print(f"[bold]{out.name}[/bold]: {len(recs)} records")
+
+    # Stage 5 narrative output (the book's philosophy/pattern-form guidance that
+    # is not a discrete pattern/smell/principle).
+    n_paths = _write_narrative_rules(
+        p.knowledge_book_dir / "narrative-rules.jsonl", book_sha, book_lines
+    )
+    written += n_paths
+    console.print(f"[bold]narrative-rules.jsonl[/bold]: {n_paths} records")
+
+    # Stage 5 coverage / low-confidence / ambiguous report.
+    report = _build_coverage_report(records, provider)
+    cov_path = p.knowledge_book_dir / "extraction-coverage-report.json"
+    cov_path.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    console.print(
+        f"[bold]extraction-coverage-report.json[/bold]: "
+        f"{len(report['low_confidence'])} low-confidence, "
+        f"{len(report['ambiguous'])} ambiguous of {report['total_records']} records"
+    )
 
     if errors:
         console.print(f"[red]{len(errors)} extraction error(s):[/red]")

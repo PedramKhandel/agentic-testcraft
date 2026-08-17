@@ -4,13 +4,21 @@ from __future__ import annotations
 import pytest
 
 from agentic_testcraft.extract import (
+    _NARRATIVE_RULES,
     NativeAgentExtractor,
     OpenAIExtractor,
+    _build_coverage_report,
     _bullets,
+    _classify_confidence,
     _clean_text,
     _first_sentence,
     _remap_smell_id,
     _segments,
+)
+from agentic_testcraft.schemas import (
+    NarrativeRecord,
+    PatternRecord,
+    SourceRef,
 )
 
 FILE_SHA = "a" * 64
@@ -227,3 +235,72 @@ def test_validate_knowledge_cli_accepts_no_credentials():
     for cls in (AnthropicExtractor, GoogleExtractor):
         with pytest.raises(SystemExit):
             cls()
+
+
+# --------------------------------------------------------------------------- #
+# Stage 5 hardening: confidence, refactorings, narrative rules, coverage.        #
+# --------------------------------------------------------------------------- #
+
+
+def test_confidence_certain_for_well_structured_pattern():
+    segs = _segments(PATTERN_TEXT)
+    assert _classify_confidence(PATTERN_CHUNK, segs, PatternRecord) == "certain"
+
+
+def test_confidence_warning_when_solution_section_absent():
+    text = [
+        "###### Test Smell",
+        "",
+        "_How do we X?_",
+        "**Test Smell**",
+        "**We do X.**",
+    ]
+    segs = _segments(text)
+    assert _classify_confidence(PATTERN_CHUNK, segs, PatternRecord) == "warning"
+
+
+def test_confidence_historical_for_appendix_chapter():
+    chunk = dict(PATTERN_CHUNK)
+    chunk["chapter_title"] = "Appendix C  The xUnit Family of Test Automation Frameworks"
+    segs = _segments(PATTERN_TEXT)
+    assert _classify_confidence(chunk, segs, PatternRecord) == "historical"
+
+
+def test_refactorings_extracted_from_section():
+    text = [
+        "###### Some Pattern", "", "**Some Pattern**", "**We do X.**", "",
+        "###### Refactoring Notes", "- refactor A", "- refactor B",
+    ]
+    chunk = dict(PATTERN_CHUNK)
+    chunk["title"] = "Some Pattern"
+    recs, errors = NativeAgentExtractor().extract([chunk], text)
+    assert errors == []
+    assert recs[0]["refactorings"] == ["refactor A", "refactor B"]
+
+
+def test_narrative_rules_are_schema_valid():
+    assert len(_NARRATIVE_RULES) == 4
+    sref = SourceRef(
+        source_id="book", file_sha256="a" * 64, markdown_start_line=1, markdown_end_line=2
+    )
+    for rule in _NARRATIVE_RULES:
+        NarrativeRecord(
+            id=rule["id"],
+            name=rule["name"],
+            statement=rule["statement"],
+            origin="book",
+            confidence="certain",
+            source_refs=[sref],
+        )
+
+
+def test_coverage_report_counts_and_lists():
+    recs = [
+        {"id": "pattern:x", "confidence": "certain", "use_where": "w", "intent": "i"},
+        {"id": "pattern:y", "confidence": "warning"},
+    ]
+    rep = _build_coverage_report(recs, "native-agent")
+    assert rep["total_records"] == 2
+    assert rep["by_type"]["pattern"]["field_coverage"]["intent"] == 1
+    assert rep["low_confidence"][0]["id"] == "pattern:y"
+    assert rep["ambiguous"][0]["id"] == "pattern:y"

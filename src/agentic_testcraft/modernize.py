@@ -666,17 +666,176 @@ _M8E: list[_ModItem] = [
     ),
 ]
 
+# --------------------------------------------------------------------------- #
+# M8f — Randomness, snapshots & service boundaries                            #
+# --------------------------------------------------------------------------- #
+
+_M8F: list[_ModItem] = [
+    _ModItem(
+        _rec(
+            id="modern:random-test-ordering",
+            topic="Shuffled, repeatable test ordering and per-test random seeds",
+            book_position=(
+                "Tests run in source/declaration order; the book's Repeated Test "
+                "(Running Tests More Than Once) re-runs the same sequence and gives no "
+                "mechanism to randomize order or to control the random seed used by a "
+                "test."
+            ),
+            modern_position=(
+                "pytest-randomly 'randomly shuffles the order of test items... [and] "
+                "resets Python's global random seed to a fixed value' derived from a "
+                "base `--randomly-seed` per test, so ordering faults surface "
+                "deterministically and each test gets a repeatable but distinct seed."
+            ),
+            status="expanded",
+            rationale=(
+                "Static order hides inter-test coupling; randomized order with a fixed, "
+                "reproducible seed surfaces ordering dependencies without introducing "
+                "flakiness."
+            ),
+            sources=["https://github.com/pytest-dev/pytest-randomly"],
+            affected=[
+                "goal:repeatable-test",
+                "pattern:test-enumeration",
+                "smell:erratic-test",
+                "smell:fragile-test",
+                "principle:keep-tests-independent",
+                "principle:design-for-testability",
+            ],
+            rule_change=(
+                "Run pytest-randomly in CI with a recorded --randomly-seed; if a test "
+                "only passes in declaration order, fix the hidden dependency."
+            ),
+        ),
+        "Runtime and determinism",
+    ),
+    _ModItem(
+        _rec(
+            id="modern:snapshot-golden",
+            topic="Snapshot / golden-master assertions for large computed output",
+            book_position=(
+                "Assertions compare against hand-written expected values (Assertion "
+                "Method / Expected Value); the book has no pattern for comparing a "
+                "computed result against a stored, version-controlled canonical "
+                "rendering."
+            ),
+            modern_position=(
+                "Syrupy is 'a zero-dependency pytest snapshot plugin. It enables "
+                "developers to write tests which assert immutability of computed "
+                "results.' `assert actual == snapshot`; snapshots live in committed "
+                "`__snapshots__` dirs and are refreshed via `pytest --snapshot-update`."
+            ),
+            status="expanded",
+            rationale=(
+                "Hand-maintaining large expected blobs is brittle and scales poorly; "
+                "golden-master comparison with a committed baseline catches unintended "
+                "regressions in rendered output."
+            ),
+            sources=["https://github.com/syrupy-project/syrupy"],
+            affected=[
+                "pattern:assertion-method",
+                "smell:fragile-test",
+                "principle:verify-one-condition-per-test",
+                "goal:tests-as-safety-net",
+            ],
+            rule_change=(
+                "For large/structured outputs, assert against a syrupy snapshot in a "
+                "committed `__snapshots__` dir; review diffs via --snapshot-details, "
+                "never blindly --snapshot-update."
+            ),
+        ),
+        "Snapshot & boundary testing",
+    ),
+    _ModItem(
+        _rec(
+            id="modern:api-boundary-mocking",
+            topic="Hermetic HTTP service boundary testing",
+            book_position=(
+                "Tests of HTTP clients/servers depend on a real external service or on "
+                "Back-Door Manipulation of a shared fixture; the book offers no per-test, "
+                "programmatically-configured transport."
+            ),
+            modern_position=(
+                "httpx provides a `transport=` abstraction; `httpx.MockTransport("
+                "handler)` 'return pre-determined responses, rather than making actual "
+                "network requests,' so HTTP-client tests assert outbound requests "
+                "against a hermetic, in-process server."
+            ),
+            status="expanded",
+            rationale=(
+                "Depending on a live third-party service makes tests slow, flaky, and "
+                "rate-limited; MockTransport makes boundary assertions hermetic and "
+                "repeatable."
+            ),
+            sources=["https://www.python-httpx.org/advanced/transports/"],
+            affected=[
+                "pattern:layer-test",
+                "pattern:back-door-manipulation",
+                "smell:fragile-test",
+                "smell:erratic-test",
+                "principle:isolate-the-sut",
+                "principle:use-the-front-door-first",
+                "goal:repeatable-test",
+            ],
+            rule_change=(
+                "For HTTP clients, inject httpx.MockTransport (or pytest-httpserver) so "
+                "the test never hits the network; assert expected requests were issued."
+            ),
+        ),
+        "Service & browser testing",
+    ),
+    _ModItem(
+        _rec(
+            id="modern:cross-version-matrix",
+            topic="Cross-version / cross-platform test gating",
+            book_position=(
+                "Test Runner runs one process; Test Selection subsets cases but the book "
+                "assumes a single environment and gives no mechanism to gate on "
+                "interpreter or OS version."
+            ),
+            modern_position=(
+                "tox 'checking your package builds and installed correctly under "
+                "different environments (such as different Python implementations, "
+                "versions or installation dependencies)' and runs the suite in each env "
+                "(e.g. py310-py313, pypy); GitHub Actions `matrix` + `setup-python` "
+                "extend this across operating systems."
+            ),
+            status="expanded",
+            rationale=(
+                "A test that passes on one interpreter/OS can fail elsewhere "
+                "(platform-dependent behavior); matrix execution is the modern baseline "
+                "for portability."
+            ),
+            sources=["https://tox.wiki/en/latest/", "https://github.com/actions/setup-python"],
+            affected=[
+                "pattern:test-runner",
+                "pattern:test-selection",
+                "smell:production-bugs",
+                "principle:design-for-testability",
+                "goal:repeatable-test",
+            ],
+            rule_change=(
+                "Gate every PR against a tox/GitHub-Actions matrix spanning supported "
+                "Python versions and operating systems; do not ship platform "
+                "assumptions untested."
+            ),
+        ),
+        "CI and execution",
+    ),
+]
+
 MODERN_RECORDS: list[dict[str, Any]] = [item.record for item in _M8A] + [
     item.record for item in _M8B
 ] + [item.record for item in _M8C] + [item.record for item in _M8D] + [
     item.record for item in _M8E
-]
+] + [item.record for item in _M8F]
 _MODERN_CATEGORIES: dict[str, str] = {
     **{item.record["id"]: item.category for item in _M8A},
     **{item.record["id"]: item.category for item in _M8B},
     **{item.record["id"]: item.category for item in _M8C},
     **{item.record["id"]: item.category for item in _M8D},
     **{item.record["id"]: item.category for item in _M8E},
+    **{item.record["id"]: item.category for item in _M8F},
 }
 
 
