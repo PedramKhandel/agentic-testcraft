@@ -6,8 +6,6 @@ entry point while internals evolve.
 """
 from __future__ import annotations
 
-from typing import Optional
-
 import typer
 
 app = typer.Typer(
@@ -64,7 +62,7 @@ def validate_knowledge() -> None:
 @app.command()
 def extract(
     provider: str = typer.Option("native-agent", "--provider", "-p"),
-    model: Optional[str] = typer.Option(None, "--model", "-m"),
+    model: str | None = typer.Option(None, "--model", "-m"),
 ) -> None:
     """Stage 5: extract structured knowledge from book chunks."""
     from .extract import run_extraction
@@ -96,17 +94,39 @@ def modernize() -> None:
     run_modernization()
 
 
+@app.command()
+def bundle() -> None:
+    """Stage 9: package the Agent Skill into a manifest and run the Stage-9 gate."""
+    from .bundle import run_bundle
+
+    report = run_bundle()
+    print(
+        f"ok: bundled {report['file_count']} files -> {report['manifest']} "
+        f"({report['title']} v{report['version']}, {report['status']})"
+    )
+
+
 @app.command(name="validate-skill")
 def validate_skill() -> None:
     """Stage 9: static validate the final Agent Skill."""
-    from .skill_validate import run_validate_skill
+    import sys
 
-    run_validate_skill()
+    from .skill_validate import SkillValidationError, run_validate_skill
+
+    try:
+        report = run_validate_skill()
+    except (SkillValidationError, FileNotFoundError) as exc:
+        sys.stderr.write(f"error: {exc}\n")
+        raise typer.Exit(code=1) from None
+    print(
+        f"ok: skill valid (title={report['title']}, version={report['version']}, "
+        f"status={report['status']}); {len(report['warnings'])} warning(s)"
+    )
 
 
 @app.command()
 def eval(
-    name: Optional[str] = typer.Argument(None, help="Case name; all if omitted"),
+    name: str | None = typer.Argument(None, help="Case name; all if omitted"),
 ) -> None:
     """Stage 10+: run evaluations."""
     from .evals import run_evals

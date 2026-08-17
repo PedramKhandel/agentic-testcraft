@@ -550,4 +550,43 @@ milestone.
 
 **Commit:** M8 closing docs (modernization-methodology.md, decisions/skill-compatibility.md).
 
+---
+
+## Milestone M9 — Author & package the production Agent Skill
+
+Authored `skill/agentic-testcraft/SKILL.md` (concise, < 400 lines, 12-step runtime
+workflow + flakiness guardrail) plus `skill/agentic-testcraft/references/` (11 catalog
+docs + `ecosystems/README.md`) per the progressive-disclosure principle (§Stage 9).
+Wrote the Stage-9 tooling in `src/agentic_testcraft/skill_validate.py` (`run_validate_skill`
+→ `load_front_matter` + `_check_skeleton`: front-matter keys/status, ≤400 lines,
+no TODO/FIXME placeholders, no verbatim-book excerpt, unique R1–R8 / step numbers,
+resolvable references each carrying an Evidence line, evidence-base file exists) and
+`src/agentic_testcraft/bundle.py` (`run_bundle` → `skill/agentic-testcraft/.skill-manifest.json`
+with file list + sha256 + meta, then re-runs the Stage-9 gate). Wired both as `agent`
+ subcommands (`validate-skill`, `bundle`) in `cli.py`; removed the now-unused `Optional`
+import and switched `extract`/`eval` annotations to `str | None`.
+
+Built `knowledge/synthesized/skill-traceability.json` (13 mappings: SKILL steps 1–12,
+R1–R8, + flakiness guardrail) linking each to a `rule:`/`pattern:`/`smell:`/`principle:`/
+`goal:` ID and a `modern:` ID. Committed the skill package incl. its manifest (the
+manifest is a deterministic, regenerable lockfile-style artifact, not gitignored; the
+regenerable `*.jsonl` knowledge outputs remain ignored per `.gitignore`).
+
+**Evidence:** run on the real skill tree — `validate-skill` → `ok: skill valid
+(Agentic Testcraft v1.0.0 stable); 0 warning(s)`; `bundle` → manifest of 13 files.
+
+**New tests:** `tests/unit/test_skill_validate.py` (8 cases incl. missing-front-matter
+keys, invalid status, broken links, duplicate rules, verbatim-excerpt, >400 lines) and
+`tests/unit/test_bundle.py` (2 cases: manifest writes + validates; validation failure
+propagates).
+
+**Quality gates:** ruff clean; mypy clean on new src files (`skill_validate.py`,
+`bundle.py`); `cli.py` introduces no new mypy error (only the pre-existing `evals`
+import-untyped note, M10). Full suite: **100 tests pass** (ruff-randomized order).
+Pre-existing strict-mypy noise in untouched test/source modules is out of scope.
+
+**Commit:** M9 production skill package (SKILL.md, references, .skill-manifest.json,
+skill_validate.py, bundle.py, cli.py, tests, build-report). Leaves M10 (eval harness)
+as the next step.
+
 

@@ -1,0 +1,89 @@
+{
+  "name": "agentic-testcraft",
+  "version": "1.0.0",
+  "status": "stable",
+  "title": "Agentic Testcraft",
+  "evidence_base": "knowledge/synthesized/skill-traceability.json",
+  "generated_at": "2026-08-17T10:07:46+00:00",
+  "file_count": 13,
+  "files": [
+    {
+      "path": "references\\async-concurrency-and-flakiness.md",
+      "bytes": 1360,
+      "sha256": "49958125743cfbad79cf41d831ee3f3c49faacecf2df7147e4ed78cf86bde434",
+      "lines": 32
+    },
+    {
+      "path": "references\\core-principles.md",
+      "bytes": 2456,
+      "sha256": "892303dc2b758c3448af5ad7d0b5913683b2ebc41c55c4b0a2808bfc1dcce258",
+      "lines": 33
+    },
+    {
+      "path": "references\\databases-and-resources.md",
+      "bytes": 1793,
+      "sha256": "8c4ee6d8ede772c180d25bc724a9a49c310fd36770243a374addccf43959d72e",
+      "lines": 33
+    },
+    {
+      "path": "references\\decision-trees.md",
+      "bytes": 1865,
+      "sha256": "5fe33aa973584685a27eff64c6ddaaa8acbcb31865b225680adc5e3618946fde",
+      "lines": 44
+    },
+    {
+      "path": "references\\ecosystems\\README.md",
+      "bytes": 1455,
+      "sha256": "79e7bf9f7e695d08e07cace1be57c4e158cb06bb095b68daf77ac6ce1aa389b2",
+      "lines": 22
+    },
+    {
+      "path": "references\\fixtures.md",
+      "bytes": 1466,
+      "sha256": "8b47d72a18a8b9b312ac39ed5a5f63a4187a03e861d8c010d9618f1c6c7537dd",
+      "lines": 27
+    },
+    {
+      "path": "references\\test-boundaries.md",
+      "bytes": 1618,
+      "sha256": "1be497e6f8e4660dd3c39928c06789e92200201a371d5c126193edb17888f62e",
+      "lines": 35
+    },
+    {
+      "path": "references\\test-doubles.md",
+      "bytes": 1582,
+      "sha256": "fa7d11ff78db4c0580743f6e8db7e24e538513579c918d7bd9dc2cd154deb183",
+      "lines": 33
+    },
+    {
+      "path": "references\\test-effectiveness.md",
+      "bytes": 1770,
+      "sha256": "1ca7bdb78cd639cdfda4ed865503405511adaaa902c3de7a20b9d7cb8e0a0348",
+      "lines": 32
+    },
+    {
+      "path": "references\\test-smells.md",
+      "bytes": 2546,
+      "sha256": "6d1fdc38cb5fdceef27a3c45755c1af7c1a00b47421d9f5ff517299d88fd10bd",
+      "lines": 42
+    },
+    {
+      "path": "references\\testability.md",
+      "bytes": 1448,
+      "sha256": "b3e290a10c0732925e0663c18efe95545e8f562cca3979e38f6c45450f5730b6",
+      "lines": 29
+    },
+    {
+      "path": "references\\verification.md",
+      "bytes": 1424,
+      "sha256": "990ee7cf833c09fb6813fc0d9aa195f86df7841a86cf7315930f064433db483b",
+      "lines": 27
+    },
+    {
+      "path": "SKILL.md",
+      "bytes": 7506,
+      "sha256": "20d434fc4d7e8f2dc1c1474ed14b55d117915072ba30974a31a6182df2bc719a",
+      "lines": 165
+    }
+  ]
+}
