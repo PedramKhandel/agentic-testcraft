@@ -574,14 +574,109 @@ _M8D: list[_ModItem] = [
     ),
 ]
 
+# --------------------------------------------------------------------------- #
+# M8e — CI & execution (parallelism, suite partitioning, monorepos)           #
+# --------------------------------------------------------------------------- #
+
+_M8E: list[_ModItem] = [
+    _ModItem(
+        _rec(
+            id="modern:ci-parallel-execution",
+            topic="Parallelize test execution locally and in CI",
+            book_position=(
+                "The Test Runner / Testcase Object / Test Suite Object model runs "
+                "tests serially within one process; Test Discovery, Enumeration and "
+                "Selection can subset a run, but the book assumes a single machine "
+                "and serial execution and offers no cross-CPU or CI parallelism."
+            ),
+            modern_position=(
+                "pytest-xdist 'extends pytest with new test execution modes, the "
+                "most used being distributing tests across multiple CPUs to speed "
+                "up test execution: `pytest -n auto`,' spawning one worker process "
+                "per CPU and distributing tests randomly. In CI, actions/"
+                "setup-python ('installs a version of Python ... and caches "
+                "dependencies for pip') with actions/checkout backs a job that "
+                "runs the suite with `-n auto` (or a pytest-split shard)."
+            ),
+            status="expanded",
+            rationale=(
+                "2007 predates CI-as-standard and multicore-parallel test "
+                "execution; the book's serial model leaves Slow Tests unaddressed "
+                "at scale. Parallelism is now the default fast-feedback mechanism."
+            ),
+            sources=[
+                "https://pytest-xdist.readthedocs.io/en/latest/",
+                "https://github.com/actions/setup-python",
+            ],
+            affected=[
+                "pattern:test-runner",
+                "pattern:test-suite-object",
+                "pattern:test-enumeration",
+                "smell:slow-tests",
+                "principle:keep-tests-independent",
+                "principle:isolate-the-sut",
+                "goal:repeatable-test",
+            ],
+            rule_change=(
+                "Run tests in parallel (`-n auto` locally; matrix + xdist in CI) "
+                "but keep every test independent and hermetic — parallelism "
+                "amplifies shared-state bugs."
+            ),
+        ),
+        "CI and execution",
+    ),
+    _ModItem(
+        _rec(
+            id="modern:monorepo-suite-partitioning",
+            topic="Shard a monorepo-scale suite across CI jobs",
+            book_position=(
+                "Test Suite Object / Named Test Suite group a Composite of tests "
+                "to run together in one pass; there is no notion of partitioning a "
+                "single suite across parallel CI jobs."
+            ),
+            modern_position=(
+                "pytest-split 'splits the test suite to equally sized sub-suites "
+                "based on test execution time' via `pytest --splits N --group M`, "
+                "letting each CI matrix job run one shard; durations persisted in "
+                ".test_durations feed the duration-based algorithm so shards stay "
+                "~equal in runtime."
+            ),
+            status="expanded",
+            rationale=(
+                "2007 predates CI job matrices and monorepo suites too large to run "
+                "on one runner; without sharding, CI feedback grows with suite size. "
+                "Sharding keeps feedback time roughly constant as the repo grows."
+            ),
+            sources=["https://jerry-git.github.io/pytest-split"],
+            affected=[
+                "pattern:test-suite-object",
+                "pattern:named-test-suite",
+                "pattern:test-selection",
+                "smell:slow-tests",
+                "goal:repeatable-test",
+                "goal:fully-automated-test",
+            ],
+            rule_change=(
+                "Persist test durations and shard the suite (`--splits/--group`) "
+                "across CI matrix jobs so each job runs an equal shard; refresh "
+                "durations after major suite changes."
+            ),
+        ),
+        "CI and execution",
+    ),
+]
+
 MODERN_RECORDS: list[dict[str, Any]] = [item.record for item in _M8A] + [
     item.record for item in _M8B
-] + [item.record for item in _M8C] + [item.record for item in _M8D]
+] + [item.record for item in _M8C] + [item.record for item in _M8D] + [
+    item.record for item in _M8E
+]
 _MODERN_CATEGORIES: dict[str, str] = {
     **{item.record["id"]: item.category for item in _M8A},
     **{item.record["id"]: item.category for item in _M8B},
     **{item.record["id"]: item.category for item in _M8C},
     **{item.record["id"]: item.category for item in _M8D},
+    **{item.record["id"]: item.category for item in _M8E},
 }
 
 

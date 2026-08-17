@@ -501,4 +501,25 @@ each citing an absolute `https://` source with a `2026-08-17` review date.
 
 **Commit:** M8d modernization (service & browser testing: Playwright, pytest-httpserver).
 
+---
+
+## M8e — Modernization: CI & execution
+
+**How:** Researched primary/official documentation for parallel test execution
+and monorepo-scale suite partitioning — pytest-xdist (`-n auto`), GitHub
+`actions/setup-python` (Python install + pip caching), and pytest-split
+(`--splits/--group` duration-balanced shards). Appended 2 `modern:*` records in a
+new `_M8E` list, each citing an absolute `https://` source with a
+`2026-08-17` review date.
+
+| id | topic | status | sources |
+|---|---|---|---|
+| `modern:ci-parallel-execution` | `pytest -n auto` + setup-python/caching in CI | expanded | pytest-xdist + setup-python README |
+| `modern:monorepo-suite-partitioning` | pytest-split `--splits/--group` shards across CI jobs | expanded | pytest-split docs |
+
+**Verification:** `modernize` → 13 records; `validate-knowledge` →
+`modernization.jsonl: 13/13 valid`; `test_modernize.py` 7/7; ruff + mypy clean.
+
+**Commit:** M8e modernization (CI & execution: parallelism, monorepo suite partitioning).
+
 
