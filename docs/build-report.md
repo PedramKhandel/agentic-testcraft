@@ -518,8 +518,36 @@ new `_M8E` list, each citing an absolute `https://` source with a
 | `modern:monorepo-suite-partitioning` | pytest-split `--splits/--group` shards across CI jobs | expanded | pytest-split docs |
 
 **Verification:** `modernize` → 13 records; `validate-knowledge` →
-`modernization.jsonl: 13/13 valid`; `test_modernize.py` 7/7; ruff + mypy clean.
+`modernization.jsonl: 13/13 valid`; `test_modernize.py` 7/7; ruff + mypy clean
+(`modernize.py` only).
 
 **Commit:** M8e modernization (CI & execution: parallelism, monorepo suite partitioning).
+
+---
+
+## M8 — Summary (a–e)
+
+**Records:** 13 `modern:*` records across 5 categories
+(Runtime & determinism, Modern integration, Test-effectiveness methods,
+Service & browser testing, CI and execution). Each cites an authoritative
+`https://` source with a `2026-08-17` review date and links to real book
+`id`s, and carries an `agent_rule_change` the future skill can adopt verbatim.
+
+**Closing artifacts:**
+- `docs/modernization-methodology.md` — M8 discipline, validation pipeline,
+  book-vs-modern boundary.
+- `docs/decisions/skill-compatibility.md` — cross-check of every M8 record
+  against skill-spec R1–R8 and acceptance criterion 6.13 (evidence mapping).
+  R7 (Effectiveness validation) is the strongest win (mutation/property/contract/
+  fuzz); no conflicts found; gaps flagged for M8f+/M9.
+
+**Full audit (M8f):** all knowledge artifacts valid (119 chunks, 660 graph
+edges, 13 modern, 93 rules, 91 book records); all 84 tests pass; `modernize.py`
++ `test_modernize.py` clean under ruff + mypy. Pre-existing lint/mypy findings
+in untouched modules (`clean.py`, `provenance.py`, `source_inspect.py`,
+`cli.py`, `test_clean.py`, `test_provenance.py`) are out of scope for this
+milestone.
+
+**Commit:** M8 closing docs (modernization-methodology.md, decisions/skill-compatibility.md).
 
 
