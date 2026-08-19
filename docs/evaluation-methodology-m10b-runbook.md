@@ -22,11 +22,11 @@ Both conditions receive the **identical** `case.task` prompt and the same model
 both and cancels; the rc1 agentic-testcraft guidance is the only difference.
 
 ### Exposure validation (contamination control)
-- opencnen startup log of a treatment run shows `agent=agentic-testcraft` and a
+- OpenCode startup log of a treatment run shows `agent=agentic-testcraft` and a
   `> agentic-testcraft · poolside/laguna-s-2.1:free` header (captured with
   `--print-logs --log-level DEBUG`).
 - The baseline run's log contains **no** such line → the skill is absent in baseline.
-- OpenRouter is configured in opencnen's credential store
+- OpenRouter is configured in OpenCode's credential store
   (`~/.local/share/opencode/auth.json`); `OPENROUTER_API_KEY` need not be in the
   environment; the free tier is rate-limited and opencmen retries mid-run.
 
@@ -38,7 +38,7 @@ both and cancels; the rc1 agentic-testcraft guidance is the only difference.
    `conftest.py` + empty `tests/` into `evals/_sandbox/<case>-<condition>/`.
 2. `opencode run <case.task> --model ... --dir <sandbox> --auto --print-logs --log-level DEBUG [--agent agentic-testcraft]`.
 3. `stage_tests` — moves agent-written `test_*.py` from the sandbox root into
-   `sandbox/tests/`. **This step is required**: opencnen writes tests at the sandbox
+   `sandbox/tests/`. **This step is required**: OpenCode writes tests at the sandbox
    root by default, but `score_run` expects them under `tests/`. Without staging, the
    copied `sut.py` shadows the seeded-defect `sut.py` and defect detection silently
    reports `caught=0`.
@@ -64,7 +64,7 @@ the orchestrator iterates the full catalog by default (M10b Phase-2). Set
 `M10B_PHASE=smoke` to rerun only the 4-case Phase-1 smoke (`SMOKE` constant).
 
 ```bash
-# Phase-2: full 26 cases x 2 conditions = 52 real opencnen model runs.
+# Phase-2: full 26 cases x 2 conditions = 52 real OpenCode model runs.
 # Each run is rate-limited on the free OpenRouter tier; run detached and poll the log.
 PYTHONPATH=src .venv/Scripts/python evals/m10b_run.py
 
@@ -78,8 +78,10 @@ PYTHONPATH=src .venv/Scripts/python -c "from agentic_testcraft.cli import app; i
 The orchestrator prints one line per (case, condition) as it progresses and writes
 `evals/results/report.json` at the end. Sandboxes (`evals/_sandbox/`), per-run logs
 (`evals/results/*.opencode.log`), and result JSONs (`evals/results/*.json`) are all
-**gitignored** transient artifacts — not committed. Only the orchestrator
-(`evals/m10b_run.py`) and this runbook are committed.
+**gitignored** transient artifacts and should not be committed. The sole exception
+is `evals/_phase2.log`, retained as an explicitly incomplete audit record for the
+initial Phase-2 attempt. It contains neither a final aggregate report nor a valid
+comparative conclusion.
 
 ## Interpreting results
 

@@ -7,13 +7,11 @@ import pytest
 from pydantic import ValidationError
 
 from agentic_testcraft.provenance import (
-    OriginLiteral,
     Provenance,
     SourceRef,
     ensure_book_provenance,
     now_iso,
     sha256_text,
-    sha256_file,
 )
 
 
@@ -25,7 +23,7 @@ def test_sha256_text_is_deterministic():
 
 
 def test_source_ref_book_requires_lines():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="markdown_start_line"):
         SourceRef(source_id="book", file_sha256="x", markdown_start_line=None)
 
 
@@ -46,7 +44,7 @@ def test_provenance_rejects_unknown_origin():
 
 def test_book_provenance_enforced():
     prov = Provenance(origin="book", source_refs=[])
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="at least one source_ref"):
         ensure_book_provenance(prov)
 
 

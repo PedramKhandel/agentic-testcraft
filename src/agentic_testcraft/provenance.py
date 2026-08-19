@@ -13,9 +13,9 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -33,8 +33,6 @@ VALID_ORIGINS = (
     ORIGIN_INFERENCE,
     ORIGIN_PROJECT_CONVENTION,
 )
-
-from typing import Literal
 
 OriginLiteral = Literal[
     "book",
@@ -82,12 +80,15 @@ class SourceRef(BaseModel):
         return v
 
     @model_validator(mode="after")
-    def _range_order(self) -> "SourceRef":
+    def _range_order(self) -> SourceRef:
         if self.markdown_start_line > self.markdown_end_line:
             raise ValueError("markdown_start_line cannot exceed markdown_end_line")
-        if self.pdf_page_start is not None and self.pdf_page_end is not None:
-            if self.pdf_page_start > self.pdf_page_end:
-                raise ValueError("pdf_page_start cannot exceed pdf_page_end")
+        if (
+            self.pdf_page_start is not None
+            and self.pdf_page_end is not None
+            and self.pdf_page_start > self.pdf_page_end
+        ):
+            raise ValueError("pdf_page_start cannot exceed pdf_page_end")
         return self
 
     def to_dict(self) -> dict[str, Any]:
@@ -140,7 +141,7 @@ def ensure_book_provenance(provenance: Provenance) -> None:
 
 def now_iso() -> str:
     """UTC timestamp in ISO-8601 (second resolution, no nanoseconds)."""
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    return datetime.now(UTC).replace(microsecond=0).isoformat()
 
 
 def write_jsonl(path: Path, records: list[Any]) -> None:
@@ -148,13 +149,10 @@ def write_jsonl(path: Path, records: list[Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as fh:
         for rec in records:
-            if isinstance(rec, BaseModel):
-                payload = rec.model_dump(exclude_none=True)
-            else:
-                payload = rec
+            payload = rec.model_dump(exclude_none=True) if isinstance(rec, BaseModel) else rec
             fh.write(json.dumps(payload, ensure_ascii=False, sort_keys=False) + "\n")
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
-    with open(path, "r", encoding="utf-8") as fh:
+    with open(path, encoding="utf-8") as fh:
         return [json.loads(line) for line in fh if line.strip()]

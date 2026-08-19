@@ -1,88 +1,88 @@
 # Architecture
 
-A reference for how `agentic_testcraft` is structured, why, and what each stage
-owns. Read top-to-bottom to understand data flow; the stage → module mapping
-below lets you jump to the right code.
+`agentic_testcraft` turns provenance-linked testing knowledge into a portable,
+decision-oriented Agent Skill. The Python package is both a deterministic build
+pipeline and an evaluation harness; the distributable output is the skill under
+`skill/agentic-testcraft/`.
 
-## Stages × modules
+## Component boundaries
 
-| Stage | Goal | Module(s) | Artifact (regenerated) |
-|---|---|---|---|
-| M0 | Bootstrap, tooling | `cli`, `config`, `provenance`, `schemas` | — |
-| M1 | Skill spec | `docs/skill-spec.md` | — |
-| M2 | Clean + provenance | `clean.py`, `source_inspect.py` | `.local/work/{book.cleaned.md, line-map.jsonl, *-report.json}` |
-| M3 | Chunk | `structure.py`, `chunk.py` | `.local/work/chunk-manifest.jsonl`, `.local/work/structure.json` |
-| M4 | Validate | `schemas.py` + `schemas/*.schema.json` | — |
-| M5 | Extract | `extract.py` | `knowledge/book/*.jsonl` |
-| M6 | Relate | `graph.py` | `knowledge/graph/{relationships.jsonl,graph.json}` |
-| M7 | Synthesize | `synthesize.py` (planned) | `knowledge/modern/*.jsonl` |
-| M8 | Modernize | `modernize.py` (planned) | `docs/modernization/*.md` |
-| M9 | Package | `bundle.py` (planned) | dist artifact |
-| M10 | Run | `run_skill.py` (planned) | — |
+| Component | Responsibility | Versioned output |
+| --- | --- | --- |
+| Source inspection and cleaning | Discover immutable source inputs, hash them, clean conversion artifacts, and preserve line provenance. | Source inputs and code; generated working files stay local. |
+| Structure and extraction | Split the cleaned source by semantic headings and produce schema-constrained, provenance-linked records. | Code and schemas; generated JSONL stays local. |
+| Graph, synthesis, and modernization | Relate records, derive operational rules, and add current guidance from official sources. | Code, methodology, and the committed skill traceability map. |
+| Skill packaging | Validate `SKILL.md` and references, then emit a content-hash manifest. | `skill/agentic-testcraft/`, including `.skill-manifest.json`. |
+| Evaluation | Materialize cases, score real agent-produced tests against seeded defects, and aggregate results. | Case definitions in code and the optional orchestrator; run outputs stay local. |
 
-## Data flow
+## Stages and CLI surface
 
+| Stage | Command | Module | Primary generated artifact |
+| --- | --- | --- | --- |
+| M0 | — | `config`, `provenance`, `schemas`, `cli` | Shared configuration and validators. |
+| M2 | `inspect-sources`, `clean` | `source_inspect`, `clean` | `.local/work/source-report.json`, cleaned text, line map. |
+| M3 | `split` | `structure`, `chunk` | `.local/work/chunk-manifest.jsonl`, `structure.json`. |
+| M4 | `validate-knowledge` | `schemas` | Validation report; no new canonical artifact. |
+| M5 | `extract` | `extract` | `knowledge/book/*.jsonl`. |
+| M6 | `build-graph` | `graph` | `knowledge/graph/relationships.jsonl`, `graph.json`. |
+| M7 | `synthesize` | `synthesize` | `knowledge/synthesized/decision-rules.jsonl`. |
+| M8 | `modernize` | `modernize` | `knowledge/modern/modernization.jsonl` and a digest. |
+| M9 | `validate-skill`, `bundle` | `skill_validate`, `bundle` | Validated skill and `.skill-manifest.json`. |
+| M10a | `eval` subcommands | `evals` | Case sandboxes, per-run scores, and aggregate report. |
+| M10b | `evals/m10b_run.py` | External OpenCode orchestration | Optional real-agent A/B run data. |
+
+## Data flow and artifact lifecycle
+
+```text
+immutable source inputs
+        |
+        v
+ .local/work/  (clean text, provenance maps, chunk manifest)
+        |
+        v
+ knowledge/book/ --> knowledge/graph/ --> knowledge/synthesized/
+        |                                            |
+        +-----------------> knowledge/modern/ -------+
+                                                     v
+                                      skill/agentic-testcraft/
+                                      (SKILL.md, references, manifest)
+
+real agent + eval case --> evals/_sandbox/ --> evals/results/report.json
 ```
-book.md / book.pdf  --(clean.py)-->  book.cleaned.md  (1:1 line map)
-                              |
-                              v
-                  (structure.py)  -->  chunk-manifest.jsonl  (119 chunks)
-                  (validate)        -->  structure.json
-                              |
-                              v
-                  (extract.py)      -->  knowledge/book/*.jsonl   (91 records)
-                              |
-                              v
-                  (graph.py)        -->  knowledge/graph/graph.json
-                                            |
-                                            +-- relationships.jsonl (648 edges)
-                                            +-- graph.json (DiGraph + stats)
-```
 
-Every record anywhere carries `source_refs` (file_sha256 + markdown_start/end
-line) so output is always traceable to its origin line in `book.cleaned.md`.
+`.local/`, generated `knowledge/*` JSONL/digests, `evals/_sandbox/`, and
+`evals/results/` are ignored because they are rebuildable or run-specific. The
+checked-in `knowledge/synthesized/skill-traceability.json` is the compact
+evidence map referenced by the release-candidate skill. The checked-in
+`evals/_phase2.log` is a single incomplete audit log; it is not an evaluation
+result or a template for committing future run output.
 
-## Design rules
+## Invariants
 
-1. **No fabrication.** The `native-agent` extractor maps canonical subsection
-   headings onto schema fields verbatim; no field is invented. If a section is
-   absent it falls back to the chunk intro prose, still source-faithful.
-2. **Deterministic.** All stages are pure functions of the cleaned book; no
-   LLM randomness. Re-running `clean → split → extract → build-graph`
-   reproduces identical artifacts (up to stable hash/uid prefixes).
-3. **Validate on write.** Records are built through pydantic models and
-   re-checked by `validate-knowledge`; invalid records cannot be written.
-4. **Provenance everywhere.** Every artifact is traceable to original Markdown
-   lines via `line-map.jsonl` and `source_refs`.
-5. **Generated intermediates are gitignored.** `.local/`, `knowledge/`, and
-   the derived `book.cleaned.md` are never committed (all regenerable from the
-   tracked source). The source book files and `.schema.json` definitions are
-   tracked (the book as immutable, owner-authorized inputs).
-
-## Why a graph
-
-M6 exists as a distinct stage because *Meszaros defines relationships by
-name*: smells link to their "Solution Patterns", patterns warn about smells
-they "may cause", and principles/goals are invoked from concrete examples.
-A directed, source-explicit graph lets downstream stages (decision-rule
-synthesis in M7, modernization in M8) ask *which patterns address a smell?*
-or *which smells does this pattern risk?* without re-parsing the prose.
+1. **Provenance is preserved.** Source-derived records retain source hashes and
+   line ranges, allowing a claim to be traced to its immutable input.
+2. **Stages are deterministic.** The default extractor (`native-agent`) and
+   all transformations use deterministic, schema-validated code.
+3. **Generated records are validated.** Pydantic models validate on write, and
+   `validate-knowledge` validates written artifacts and cross-record references.
+4. **The skill is independently validated.** `validate-skill` checks required
+   front matter, structure, references, and source-leak guardrails; `bundle`
+   creates the content manifest only after that gate passes.
+5. **Evaluation does not fabricate results.** The harness only scores tests
+   created by an actual agent or human. A score report is meaningful only when
+   its complete inputs and execution conditions are available.
 
 ## Key identifiers
 
-- Chunk ids: `pattern:<slug>`, `smell:<slug>`, `goal:<slug>`, `principle:<slug>`,
-  `reference:<slug>` (smell-category chunks are remapped from `code:` /
-  `behavior:` / `project:` to `smell:` so chunk ids match knowledge ids).
-- Edge types: `refactors_to`, `prevents`, `may_cause`, `used_with`, `supports`.
+- Knowledge IDs use prefixes such as `pattern:`, `smell:`, `goal:`,
+  `principle:`, `modern:`, and `decision-rule:`.
+- Relationship edges use `refactors_to`, `prevents`, `may_cause`, `used_with`,
+  and `supports`.
+- Evaluation case IDs are defined by `CASE_CATALOG` in
+  `src/agentic_testcraft/evals.py`; `eval list-cases` prints the authoritative
+  catalog.
 
-## Running the pipeline
-
-```
-agentic-testcraft clean          # M2
-agentic-testcraft split          # M3
-agentic-testcraft validate-knowledge   # M4
-agentic-testcraft extract        # M5
-agentic-testcraft build-graph    # M6
-```
-
-Each command is idempotent and prints a one-line status summary.
+For the assumptions and audit trail behind this design, read the
+[source-handling methodology](source-methodology.md),
+[modernization methodology](modernization-methodology.md), and
+[build progress report](build-report.md).

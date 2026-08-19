@@ -26,7 +26,8 @@ from __future__ import annotations
 
 import json
 import re
-from collections import Counter, defaultdict
+from collections import Counter
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -45,7 +46,7 @@ class Line:
     text: str
     transformations: list[str] = field(default_factory=list)
 
-    def copy_with(self, text: str, *tf: str) -> "Line":
+    def copy_with(self, text: str, *tf: str) -> Line:
         return Line(
             source_lines=list(self.source_lines),
             text=text,
@@ -106,7 +107,7 @@ def _convert_breaks(line: Line) -> list[Line]:
         return [line]
     parts = RE_BR.split(line.text)
     out = []
-    for i, part in enumerate(parts):
+    for _i, part in enumerate(parts):
         new = line.copy_with(part, "convert_break")
         out.append(new)
     return out
@@ -167,9 +168,7 @@ def _is_removable(line: str) -> bool:
     s = line.strip()
     if s in WATERMARK_STRINGS:
         return True
-    if RE_PAGE_HEADER.match(s):
-        return True
-    return False
+    return bool(RE_PAGE_HEADER.match(s))
 
 
 @dataclass
@@ -178,9 +177,9 @@ class CleanupCounts:
     total_output_lines: int = 0
     removed_watermark: int = 0
     removed_page_header: int = 0
-    transform_counts: Counter = field(default_factory=Counter)
+    transform_counts: Counter[str] = field(default_factory=Counter)
 
-    def to_report(self) -> dict:
+    def to_report(self) -> dict[str, object]:
         return {
             "total_input_lines": self.total_input_lines,
             "total_output_lines": self.total_output_lines,
@@ -192,7 +191,7 @@ class CleanupCounts:
 
 
 # 1:1 transform rules (applied before the splitting ``<br>`` rule).
-TRANSFORM_RULES: list = [
+TRANSFORM_RULES: list[Callable[[Line], Line]] = [
     _strip_comments,
     _unwrap_sup,
     _remove_strikethrough_artifacts,
@@ -206,8 +205,8 @@ TRANSFORM_RULES: list = [
 @dataclass
 class CleanResult:
     text: str
-    line_map: list[dict]
-    counts: "CleanupCounts"
+    line_map: list[dict[str, object]]
+    counts: CleanupCounts
 
 
 def clean_text(text: str) -> CleanResult:
@@ -260,7 +259,7 @@ def clean_text(text: str) -> CleanResult:
 
     # Renumber clean lines and build the provenance map.
     cleaned_lines: list[str] = []
-    line_map: list[dict] = []
+    line_map: list[dict[str, object]] = []
     for idx, ln in enumerate(normalised, start=1):
         cleaned_lines.append(ln.text)
         counts.transform_counts.update(ln.transformations)
@@ -313,7 +312,7 @@ def run_clean() -> int:
     md_path, pdf_path, md_sha, pdf_sha = _discover_source(settings)
 
     # 1. Record source manifest (inspection).
-    report = run_inspection(md_path=md_path, pdf_path=pdf_path, md_sha256=md_sha, pdf_sha256=pdf_sha)
+    run_inspection(md_path=md_path, pdf_path=pdf_path, md_sha256=md_sha, pdf_sha256=pdf_sha)
 
     # 2. Clean.
     source_text = Path(md_path).read_text(encoding="utf-8", errors="replace")

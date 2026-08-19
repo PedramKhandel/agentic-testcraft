@@ -33,7 +33,7 @@ def _approx_tokens(text: str) -> int:
 
 
 def _heading_distribution(lines: list[str]) -> dict[str, int]:
-    dist: Counter = Counter()
+    dist: Counter[str] = Counter()
     for ln in lines:
         m = re.match(r"^(#{1,6})\s+", ln)
         if m:
@@ -59,9 +59,9 @@ def _watermark_lines(lines: list[str]) -> list[str]:
     found: list[str] = []
     for ln in lines:
         s = ln.strip()
-        if re.fullmatch(r"(www\.it-ebooks\.info|eZ \| ARS)", s):
-            found.append(s)
-        elif re.fullmatch(r"\s*\d{1,4}\s*", s):
+        if re.fullmatch(r"(www\.it-ebooks\.info|eZ \| ARS)", s) or re.fullmatch(
+            r"\s*\d{1,4}\s*", s
+        ):
             found.append(s)
     return found
 
@@ -96,14 +96,14 @@ def inspect_pdf(pdf_path: str | Path) -> dict[str, Any]:
         "sha256": sha256_file(path),
     }
     try:
-        import pymupdf  # type: ignore
+        import pymupdf
 
-        doc = pymupdf.open(str(path))
+        doc = pymupdf.open(str(path))  # type: ignore[no-untyped-call]
         info["page_count"] = doc.page_count
         # Quality sample: count pages with real text vs. empty.
         empty = 0
         sample_chars = 0
-        for pg in doc:
+        for pg in doc:  # type: ignore[attr-defined]
             txt = pg.get_text("text")
             if not txt.strip():
                 empty += 1
@@ -113,7 +113,7 @@ def inspect_pdf(pdf_path: str | Path) -> dict[str, Any]:
         info["text_extractable"] = True
         info["empty_text_pages"] = empty
         info["sample_text_chars"] = sample_chars
-        doc.close()
+        doc.close()  # type: ignore[no-untyped-call]
     except Exception as exc:  # noqa: BLE001
         info["text_extractable"] = False
         info["error"] = f"{type(exc).__name__}: {exc}"

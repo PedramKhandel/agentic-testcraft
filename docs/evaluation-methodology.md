@@ -1,12 +1,14 @@
-# Evaluation methodology (Stage 10a / M10a)
+# Evaluation methodology (M10a harness and M10b execution)
 
-This document describes how Agentic Testcraft is evaluated. **M10a only builds the
-deterministic harness and scoring infrastructure; it does not simulate any
-candidate solution and does not invoke an LLM.** Real A/B execution
-(M10b) runs a coding agent in two conditions and feeds its `tests/` into this
-harness. The status M10a leaves the project in is:
+This document describes the deterministic evaluation harness. **M10a builds
+the harness and scoring infrastructure; it does not simulate a candidate
+solution or invent results.** M10b uses that harness to run a real coding agent
+in two conditions. The M10b orchestrator is implemented; its operational
+requirements are documented in the [M10b runbook](evaluation-methodology-m10b-runbook.md).
 
-> *evaluation infrastructure complete; real A/B execution pending*
+The checked-in Phase-2 log is an interrupted operational record, not a complete
+A/B dataset or a claim that the skill improved any metric. Publish a comparative
+result only after a complete, reproducible run and a reviewed aggregate report.
 
 Run `agentic-testcraft eval --help` for the subcommand surface.
 
@@ -107,7 +109,9 @@ an `explicit_sleep` → `diagnostic_quality` proxy of 1); most dimensions are le
 
 ## 7. Limitations
 
-- No end-to-end simulated agent: A/B results require real agent runs (M10b).
+- No simulated agent or synthetic results: A/B evidence requires real agent
+  runs (M10b), with the model, agent profile, prompts, and generated tests
+  available for review.
 - Rubric proxies are coarse; qualitative dimensions require a judge.
 - `mutation_score` approximates mutmut/atheris via seeded defects only.
 - Static AST scorers are heuristic (e.g. `sut_mocked` flags `import sut`+mock

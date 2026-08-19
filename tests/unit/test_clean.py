@@ -6,14 +6,7 @@ from __future__ import annotations
 
 import json
 
-from agentic_testcraft.clean import (
-    CleanResult,
-    clean_text,
-    _is_removable,
-    WATERMARK_STRINGS,
-    RE_HEADING_BOLD,
-)
-
+from agentic_testcraft.clean import CleanResult, _is_removable, clean_text
 
 SAMPLE = """\
 ###### **Assertion Method**
@@ -35,7 +28,6 @@ Chapter 19  xUnit Basics Patterns
 
 
 def test_watermark_lines_removed():
-    line = "www.it-ebook.info"
     # exact watermark is removed; a typo variant is NOT auto-removed.
     assert _is_removable("www.it-ebook.info") is False  # typo 'it-ebook' not 'it-ebooks'
     assert _is_removable("www.it-ebooks.info") is True
@@ -88,7 +80,8 @@ def test_strikethrough_artifact_restored():
     assert "~~" not in out2
     # em-dash stroke restored
     out3 = clean_text("good ~~" + "\u2014" + "~~ finding").text
-    assert "\u2014" in out3 and "~~" not in out3
+    assert "\u2014" in out3
+    assert "~~" not in out3
     # genuine multi-word strikethrough is preserved
     out4 = clean_text("~~Key to Summary~~").text
     assert "~~Key to Summary~~" in out4
@@ -106,7 +99,8 @@ def test_heading_emphasis_stripped():
     assert out.startswith("###### Assertion Method")
     out2 = clean_text("###### _Smells in This Chapter_").text
     assert out2.startswith("###### Smells in This Chapter")
-    assert "**" not in out and "_" not in out
+    assert "**" not in out
+    assert "_" not in out
 
 
 def test_comments_removed_but_picture_text_preserved():
