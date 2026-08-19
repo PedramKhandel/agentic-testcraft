@@ -115,6 +115,7 @@ def main() -> None:
     sys.path.insert(0, str(SRC))
     from agentic_testcraft.evals import (  # noqa: E402
         RunMetadata,
+        case_ids,
         get_case,
         score_run,
         setup_case,
@@ -123,11 +124,13 @@ def main() -> None:
     RESULTS.mkdir(parents=True, exist_ok=True)
     SANDBOX_ROOT.mkdir(parents=True, exist_ok=True)
     OC = _which_opencode()
+    phase = os.environ.get("M10B_PHASE", "all")
+    CASE_IDS = SMOKE if phase == "smoke" else case_ids()
     print(f"M10b orchestrator — opencnen={OC} model={MODEL} agent={AGENT}")
-    print(f"cases={SMOKE}  conditions=baseline(no --agent) vs skill(--agent {AGENT})")
+    print(f"phase={phase} cases={len(CASE_IDS)} conditions=baseline(no --agent) vs skill(--agent {AGENT})")
 
     rows: list[tuple[str, str, str, bool, float, float, float]] = []
-    for case_id in SMOKE:
+    for case_id in CASE_IDS:
         case = get_case(case_id)
         print(f"\n=== {case_id}: {case.title} ===")
         for condition, use_agent in CONDITIONS:
@@ -188,7 +191,7 @@ def main() -> None:
         text=True,
         check=False,
     )
-    print("\n=== smoke summary ===")
+    print("\n=== summary ===")
     print(f"{'case':24s}{'cond':10s}{'pass':6s}{'caught':8s}{'mut':6s}{'wall_s':7s}")
     for cid, cond, _td, passed, caught, mut, wall in rows:
         print(f"{cid:24s}{cond:10s}{str(passed):6s}{caught:<8.0f}{mut:<6.1f}{wall:<7.1f}")

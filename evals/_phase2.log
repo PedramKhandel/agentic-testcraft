@@ -1,0 +1,33 @@
+M10b orchestrator — opencnen=C:\Users\Pedram\AppData\Roaming\npm\opencode.CMD model=openrouter/poolside/laguna-s-2.1:free agent=agentic-testcraft
+phase=all cases=26 conditions=baseline(no --agent) vs skill(--agent agentic-testcraft)
+
+=== pure-function: Pure deterministic function ===
+  baseline | opencnen_rc=0 wall=28.6s | pass=True caught=1/1 mut=1.0 smells[sleeps=0,sut_mocked=False,shared=False,inter=0,deps=0]
+  skill    | opencnen_rc=0 wall=371.8s | pass=True caught=1/1 mut=1.0 smells[sleeps=0,sut_mocked=False,shared=False,inter=0,deps=0]
+
+=== boundary-validation: Boundary validation / off-by-one ===
+  baseline | opencnen_rc=0 wall=58.0s | pass=True caught=1/1 mut=1.0 smells[sleeps=0,sut_mocked=False,shared=False,inter=0,deps=0]
+  skill    | opencnen_rc=0 wall=253.2s | pass=True caught=1/1 mut=1.0 smells[sleeps=0,sut_mocked=False,shared=False,inter=0,deps=0]
+
+=== clock-dependency: Clock dependency (inject a clock, not the wall clock) ===
+  baseline | opencnen_rc=0 wall=88.3s | pass=True caught=1/1 mut=1.0 smells[sleeps=0,sut_mocked=False,shared=False,inter=0,deps=0]
+  skill    | opencnen_rc=0 wall=241.8s | pass=True caught=1/1 mut=1.0 smells[sleeps=0,sut_mocked=False,shared=False,inter=0,deps=0]
+
+=== randomness-dependency: Randomness / UUID dependency (stub the generator, not the SUT) ===
+  baseline | opencnen_rc=0 wall=113.6s | pass=True caught=1/1 mut=1.0 smells[sleeps=0,sut_mocked=False,shared=False,inter=0,deps=0]
+  skill    | opencnen_rc=0 wall=166.7s | pass=True caught=1/1 mut=1.0 smells[sleeps=0,sut_mocked=False,shared=False,inter=0,deps=0]
+
+=== external-http-client: External HTTP client (mock the transport, not the SUT) ===
+  baseline | opencnen_rc=0 wall=89.8s | pass=True caught=0/1 mut=0.0 smells[sleeps=0,sut_mocked=False,shared=False,inter=0,deps=0]
+  skill    | opencnen_rc=0 wall=227.7s | pass=True caught=0/1 mut=0.0 smells[sleeps=0,sut_mocked=False,shared=False,inter=0,deps=0]
+
+=== database-repository: Database repository (disposable/transient DB, not a shared fixture) ===
+  baseline | opencnen_rc=0 wall=56.9s | pass=True caught=1/1 mut=1.0 smells[sleeps=0,sut_mocked=False,shared=False,inter=0,deps=0]
+  skill    | opencnen_rc=0 wall=389.5s | pass=True caught=1/1 mut=1.0 smells[sleeps=0,sut_mocked=False,shared=False,inter=0,deps=0]
+
+=== file-system-dependency: File-system dependency (tmp_path, not the repo tree) ===
+  baseline | opencnen_rc=0 wall=138.9s | pass=True caught=1/1 mut=1.0 smells[sleeps=0,sut_mocked=False,shared=False,inter=0,deps=0]
+  skill    | opencnen_rc=124 wall=928.6s | pass=True caught=1/1 mut=1.0 smells[sleeps=0,sut_mocked=False,shared=False,inter=0,deps=0]
+
+=== event-publisher: Event publisher (interaction IS the requirement) ===
+  baseline | opencnen_rc=0 wall=186.2s | pass=True caught=1/1 mut=1.0 smells[sleeps=0,sut_mocked=True,shared=False,inter=1,deps=0]

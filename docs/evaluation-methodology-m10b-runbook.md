@@ -59,17 +59,27 @@ an absolute directory.
 
 ## Reproducing
 
+`case_ids()` (`src/agentic_testcraft/evals.py:490`) returns the full 26-case catalog;
+the orchestrator iterates the full catalog by default (M10b Phase-2). Set
+`M10B_PHASE=smoke` to rerun only the 4-case Phase-1 smoke (`SMOKE` constant).
+
 ```bash
-# run a full smoke A/B (opencnen calls the model; results land in evals/results/)
+# Phase-2: full 26 cases x 2 conditions = 52 real opencnen model runs.
+# Each run is rate-limited on the free OpenRouter tier; run detached and poll the log.
 PYTHONPATH=src .venv/Scripts/python evals/m10b_run.py
 
-# re-aggregate (no model cost)
+# Phase-1 smoke only (8 runs) — fast re-validation of exposure + scoring:
+M10B_PHASE=smoke PYTHONPATH=src .venv/Scripts/python evals/m10b_run.py
+
+# re-aggregate only (no model cost):
 PYTHONPATH=src .venv/Scripts/python -c "from agentic_testcraft.cli import app; import sys; sys.argv=['atc','eval','report']; app()"
 ```
 
-Generated sandboxes (`evals/_sandbox/`), per-run logs, and result JSONs
-(`evals/results/`) are all gitignored — they are transient evaluation artifacts and
-are **not** committed. Only the orchestrator and this runbook are committed.
+The orchestrator prints one line per (case, condition) as it progresses and writes
+`evals/results/report.json` at the end. Sandboxes (`evals/_sandbox/`), per-run logs
+(`evals/results/*.opencode.log`), and result JSONs (`evals/results/*.json`) are all
+**gitignored** transient artifacts — not committed. Only the orchestrator
+(`evals/m10b_run.py`) and this runbook are committed.
 
 ## Interpreting results
 
